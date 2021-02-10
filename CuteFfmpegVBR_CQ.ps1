@@ -1,5 +1,5 @@
 ﻿#
-### User adjustable folder names.
+### User adjustable stuff.
 #
 ## PICK WHERE YOU WANT THE ROOT TO BE
 #
