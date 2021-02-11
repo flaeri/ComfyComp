@@ -88,7 +88,3 @@ foreach ($video in $videos) {
 #CountEm
 Write-Host "videos attempted:" $videos.Count
 pause #hit em up with a nice pause, so they know its done and didnt crash :)
-
-# 1. ffmpeg exists in path, or possibly an option to point at if not
-# 2. check version, makes sure it has new nvenc api
-# 3. check/create working directory and subfolders.

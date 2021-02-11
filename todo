@@ -1,0 +1,4 @@
+1. ffmpeg exists in path, or possibly an option to point at if not
+2. check version, makes sure it has new nvenc api
+3. check/create working directory and subfolders.
+4. Have a way to save config data, so updates dont cause you to need to update the user values.
