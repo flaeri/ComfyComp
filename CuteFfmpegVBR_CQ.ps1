@@ -11,6 +11,9 @@ $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This (24) will only show warnings.
 $ow = "n" #overwrite files in output dir. Switch to "y" (yes), if you would like.
+
+### Stop editing stuff now, unless you are every confident in your actions :)
+
 #Cute banner
 Get-Content .\banner.txt
 write-host "`n"

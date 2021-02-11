@@ -3,3 +3,4 @@
 3. check/create working directory and subfolders.
 4. Have a way to save config data, so updates dont cause you to need to update the user values.
 5. Check powershell unsigned local.
+6. Escape / fix ' ffmpeg fail in FFREPORT
