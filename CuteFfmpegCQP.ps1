@@ -7,7 +7,7 @@ Push-Location -path 'C:\TEMP\ffmpeg test' #root directory, all folder will be un
 $inputVids = "01 Input"
 $outputVids = "02 Output" 
 $logs = "03 Logs"
-$cq = 24 #CQ value, lower number, higher quality and bigger files.
+$qp = 24 #qp value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This will only show warnings.
 $ow = "n" #overwrite files in output dir. Switch to "y" (yes), if you would like.
@@ -17,7 +17,7 @@ write-host "`n"
 
 # tagline, and shilling
 write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor black
-write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
+write-host "HEVC nvenc, CQP, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
 #testing hevc b-frames
@@ -53,7 +53,7 @@ write-host "`n"
 write-host "Working directory: $PWD"
 write-host "`n"
 Write-host "Current parameters:"
-Write-host "CQ value chosen: $cq"
+Write-host "qp value chosen: $qp"
 Write-host "Maxrate: $mr"
 Write-host "overwriting output files: $ow"
 write-host "`n"
@@ -74,7 +74,7 @@ foreach ($video in $videos) {
 
     #multi line drifting
     ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i $inputVids\$video -map 0 -c:v hevc_nvenc -refs $ref `
-    -preset p7 -rc vbr -cq $cq -bf $bf -maxrate $mr -bufsize $mr -spatial-aq 1 -temporal-aq $taq -aq-strength 7 `
+    -preset p7 -rc constqp -qp $qp -bf $bf -maxrate $mr -bufsize $mr `
     -b_ref_mode $bref -c:a copy $outputVids\$shortName-comp.mp4
 
     Write-host "Encoding $video completed in:"
