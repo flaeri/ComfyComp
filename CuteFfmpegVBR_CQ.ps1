@@ -30,7 +30,7 @@ if ( $LASTEXITCODE -eq 1) {
     write-host "We will continue without them :) some other features also need to be disabled" -ForegroundColor Yellow -BackgroundColor Black
 } else {
     write-host "HEVC B-frames ARE supported on your chip, yay!" -ForegroundColor Green
-    $bf = 3
+    $bf = 2
     Write-Host "B-Frames =" $bf
 }
 #if b-frames fail, we assume its 10 series or below, and we need to disable more stuff. Dont bully me, I dont care enough to re-write this to not be dumb... I know it is.
