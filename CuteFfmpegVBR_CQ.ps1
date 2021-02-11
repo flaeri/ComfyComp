@@ -5,8 +5,8 @@
 #
 Push-Location -path 'C:\TEMP\ffmpeg test' #root directory, all folder will be under this
 $inputVids = "01 Input"
-$outputVids = "02 output" 
-$logs = "03 logs"
+$outputVids = "02 Output" 
+$logs = "03 Logs"
 $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This will only show warnings.
