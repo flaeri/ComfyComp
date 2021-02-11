@@ -1,5 +1,8 @@
 check/create working directory and subfolders.
+
 Have a way to save config data, so updates dont cause you to need to update the user values.
+    Done, but what is the point again?
+
 check version, makes sure it has new nvenc api
     This is kind of alread built into ffmpeg, people will know "version old" to mean, their ffmpeg is old.
 
