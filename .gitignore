@@ -1,3 +1,4 @@
 
 *.json
 testAppConfig.ps1
+config.xml
