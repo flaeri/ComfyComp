@@ -20,6 +20,16 @@ write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor
 write-host "HEVC nvenc, CQP, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
+# Testing if ffmpeg in path
+$ffPath = get-command ffmpeg
+Write-Host $ffPath
+    if ($null -eq $ffPath) {
+        Write-Host "ffmpeg was not found in your path. If you need help: https://www.thewindowsclub.com/how-to-install-ffmpeg-on-windows-10" -ForegroundColor Red
+        Write-Host "The script will now end. Sort your path and try again :)"
+        pause
+        exit
+}
+
 #testing hevc b-frames
 ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
 Write-Host "`n"
