@@ -10,7 +10,7 @@ $logs = "03 logs"
 $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This will only show warnings.
-$ow = "y" #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$ow = "n" #overwrite files in output dir. Switch to "y" (yes), if you would like.
 #Cute banner
 type .\banner_VBR-HQ.txt
 write-host "`n"
