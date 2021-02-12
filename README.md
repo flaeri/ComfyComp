@@ -7,7 +7,7 @@ Its a pretty basic script that will take *any* files in the input folder, and sp
 This *only* work for people with nvidia cards that support HEVC.
 That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preffered.
 
-**You now have an option to have the script just autodownload to a specified location, and use that. Very neat and easy!**
+**You now have an option to have the script auto download FFMPEG to a specified location, and use that. Very neat and easy!**
 
 If you would like to download your own build, and add it to your path, feel free to do so. Make sure you're up to date so you have the new Nvenc API.
 Make sure the following is in place:
