@@ -1,6 +1,7 @@
 # ComfyComp
 
-What is this???
+#What is this???
+
 Its a pretty basic script that will take *any* files in the input folder, and spit out hevc nvenc compressed files (using VBR-CQ), and possibly with b-frames if you have support for it. It also logs certain informatino, and gives you time to completion.
 
 This *only* works for people with nvidia cards that support HEVC.
