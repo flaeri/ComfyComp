@@ -4,9 +4,9 @@
 ## PICK WHERE YOU WANT THE ROOT TO BE
 #
 $rootLocation = "C:\TEMP\ffmpegCompression" #root directory, all folder will be under this. EDIT THIS
-$inputVids = "01 Input"
-$outputVids = "02 Output" 
-$logs = "03 Logs"
+$inputVids = "01 Input"     #
+$outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
+$logs = "03 Logs"           #
 $folders = $rootLocation, $inputVids, $outputVids, $logs
 $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
