@@ -45,6 +45,7 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
             $download = $Host.UI.PromptForChoice($questionDownload, $questionDownload, $yesNo, 0)
             if ($download -eq 0) {
                 Invoke-Expression .\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
+                exit
             } else {
                 write-host "`n"
                 write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red

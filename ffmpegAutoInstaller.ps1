@@ -15,5 +15,5 @@ if (Test-Path "$ffmpegPath\ffmpeg.exe") {
     Expand-Archive -path "ffmpeg.zip" $ffmpegPath
     Remove-Item "ffmpeg.zip"
 }
-"done!"
-& ".\ComfyComp.ps1"
+write-host "Trying to run ComfyComp again!" -ForegroundColor Green
+Invoke-Expression .\comfyComp.ps1
