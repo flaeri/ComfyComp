@@ -24,6 +24,8 @@ Make sure you've added ffmpeg to your envoirenment path.
     
     a. If you plan on changing the folder names, make sure the folder names match what is written in the top of the script.
 
+3. Run the powershell script "ComfyComp.ps1" (right click > run in powershell)
+
 If you get powershell errors complaing about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
 Please read this: https://docs.microsoft.com/previous-versions//bb613481(v=vs.85)
 
