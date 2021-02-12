@@ -9,7 +9,7 @@ That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) w
 
 **You now have an option to have the script auto download FFMPEG to a specified location, and use that. Very neat and easy!**
 
-If you would like to download your own build, and add it to your path, feel free to do so. Make sure you're up to date so you have the new Nvenc API.
+If you would like to download or use your own build, and add it to your path, feel free to do so. Make sure you're up to date so you have the latest Nvenc API.
 Make sure the following is in place:
 
 Requires ffmpeg in your path, which has the new nvenc API. You can grab it from here if you need it:
