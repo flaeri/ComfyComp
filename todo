@@ -1,13 +1,4 @@
-check/create working directory and subfolders.
-
-Have a way to save config data, so updates dont cause you to need to update the user values.
-    Done, but what is the point again?
-
-check version, makes sure it has new nvenc api
+test for latest new nvenc api
     This is kind of alread built into ffmpeg, people will know "version old" to mean, their ffmpeg is old.
 
-
-Check powershell unsigned local, and escalate if not and ask user to set.
-
 Escape / fix ' ffmpeg fail in FFREPORT
-merge CQ and CQP scripts. Or just throw CQP away :)
