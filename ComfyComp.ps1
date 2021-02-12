@@ -3,7 +3,7 @@
 #
 ## PICK WHERE YOU WANT THE ROOT TO BE
 #
-$rootLocation = "C:\temp\ComfyComp_v1" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
+$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
 $inputVids = "01 Input"     #
 $outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
 $logs = "03 Logs"           #
@@ -12,8 +12,13 @@ $cq = 24                    #CQ value, lower number, higher quality and bigger f
 $mr = "100M"                #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24                    #loglevel, set 32 if you want normal output. This (24) will only show warnings.
 $ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$suffix = "comp"            #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
 ### Stop editing stuff now, unless you are every confident in your changes :)
+
+# vars the script needs. Please dont alter.
+$yesNo = "&Yes", "&No"
+$FlaeriFfmpegPath = "C:\ffmpeg"   #Only used if ffmpeg is not found in the users path.
 
 Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
@@ -27,17 +32,44 @@ write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily ad
 write-host "`n"
 
 # Testing if ffmpeg in path
-$ffPath = get-command ffmpeg
-Write-Host $ffPath
+$ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
     if ($null -eq $ffPath) {
-        Write-Host "ffmpeg was not found in your path. If you need help: https://www.thewindowsclub.com/how-to-install-ffmpeg-on-windows-10" -ForegroundColor Red
-        Write-Host "The script will now end. Sort your path and try again :)"
-        pause
-        exit
+        if (Test-Path -Path "$FlaeriFfmpegPath\ffmpeg.exe") {
+            $ENV:PATH="$ENV:PATH;$FlaeriFfmpegPath"
+            if (Get-Command ffmpeg) {
+                Write-Host "FFMPEG found!" -ForegroundColor green
+            }
+        } else {
+            Write-Host "ffmpeg was not found in your path, and you've never ran the autoinstall script" -ForegroundColor Red
+            $questionDownload = "Would you like to auto download and have this script call that instead? (Your permanent path will NOT be altered)"
+            $download = $Host.UI.PromptForChoice($questionDownload, $questionDownload, $yesNo, 0)
+            if ($download -eq 0) {
+                Invoke-Expression .\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
+            } else {
+                write-host "`n"
+                write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red
+                write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your envoirenment/path" -ForegroundColor red
+                write-host "`n"
+                write-host "The script will now exit. Please run it again if you change your mind, or you've installed ffmpeg correctly " -ForegroundColor yellow
+            pause
+            exit
+        }
+    }
+}
+
+#testing for nvenc
+ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -
+if ( $LASTEXITCODE -eq 1) {
+    write-host "Nvenc HEVC is NOT supported on this card, sorry!" -ForegroundColor Red
+    write-host "The script will now exit" -ForegroundColor Yellow -BackgroundColor Black
+    Pause
+    exit
+} else {
+    write-host "Nvenc HEVC supported!" -ForegroundColor Green
 }
 
 #testing hevc b-frames
-ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
+ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
 Write-Host "`n"
 if ( $LASTEXITCODE -eq 1) {
     write-host "HEVC B-frames not supported on your chip" -ForegroundColor Red
@@ -103,7 +135,7 @@ foreach ($video in $videos) {
     #multi line drifting
     ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i $inputVids\$video -map 0 -c:v hevc_nvenc -refs $ref `
     -preset p7 -rc vbr -cq $cq -bf $bf -maxrate $mr -bufsize $mr -spatial-aq 1 -temporal-aq $taq -aq-strength 7 `
-    -b_ref_mode $bref -c:a copy $outputVids\$shortName-comp.mp4
+    -b_ref_mode $bref -c:a copy $outputVids\$shortName-$suffix.mp4
 
     Write-host "Encoding $video completed in:"
     $time = select-string -Path $logs\$shortName.log -Pattern 'rtime=(.*)' | ForEach-Object{$_.Matches.Groups[1].Value} #ugly parsing to grab time to complete
