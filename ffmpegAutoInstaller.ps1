@@ -13,6 +13,7 @@ if (Test-Path "$ffmpegPath\ffmpeg.exe") {
     $ProgressPreference = 'Continue'
     mkdir -path "$ffmpegPath"
     Expand-Archive -path "ffmpeg.zip" $ffmpegPath
+    Remove-Item "ffmpeg.zip"
 }
 "done!"
 & ".\ComfyComp.ps1"
