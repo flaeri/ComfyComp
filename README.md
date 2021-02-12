@@ -5,7 +5,7 @@
 Its a pretty basic script that will take *any* files in the input folder, and spit out hevc nvenc compressed files (using VBR-CQ), and possibly with b-frames if you have support for it. It also logs certain information, and gives you time to completion.
 
 This *only* works for people with nvidia cards that support HEVC.
-That means minimum 3rd gen (starting from GM206)
+That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preffered.
 
 Requires ffmpeg in your path, which has the new nvenc API. You can grab it from here if you need it:
 https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z
