@@ -3,17 +3,19 @@
 #
 ## PICK WHERE YOU WANT THE ROOT TO BE
 #
-Push-Location -path 'C:\TEMP\ffmpeg test' #root directory, all folder will be under this
+$rootLocation = "C:\TEMP\ffmpegCompression" #root directory, all folder will be under this. EDIT THIS
 $inputVids = "01 Input"
 $outputVids = "02 Output" 
 $logs = "03 Logs"
-$folders = $inputVids, $outputVids, $logs
+$folders = $rootLocation, $inputVids, $outputVids, $logs
 $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This (24) will only show warnings.
 $ow = "n" #overwrite files in output dir. Switch to "y" (yes), if you would like.
 
 ### Stop editing stuff now, unless you are every confident in your actions :)
+
+Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
 #Cute banner
 Get-Content .\banner.txt
@@ -72,7 +74,7 @@ foreach ($folder in $folders) {
 }
 
     else {
-        write-host "$folder does not exist. Please create it or fix your folder name and rerun the script. The script will now exit" -ForegroundColor Red
+        write-host "$folder does not exist. Please create it or adjust the paths and folder names at the start of the script, then rerun the script. The script will now exit" -ForegroundColor Red
         pause
         exit
     }
