@@ -7,6 +7,7 @@ Push-Location -path 'C:\TEMP\ffmpeg test' #root directory, all folder will be un
 $inputVids = "01 Input"
 $outputVids = "02 Output" 
 $logs = "03 Logs"
+$folders = $inputVids, $outputVids, $logs
 $cq = 24 #CQ value, lower number, higher quality and bigger files.
 $mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
 $ll = 24 #loglevel, set 32 if you want normal output. This (24) will only show warnings.
@@ -64,6 +65,18 @@ write-host "`n"
 
 #where you at
 write-host "Working directory: $PWD"
+#testing folders
+foreach ($folder in $folders) {
+    if (Test-Path -Path $folder) {
+    Write-Host "$folder confirmed!" -ForegroundColor Green
+}
+
+    else {
+        write-host "$folder does not exist. Please create it or fix your folder name and rerun the script. The script will now exit" -ForegroundColor Red
+        pause
+        exit
+    }
+}
 write-host "`n"
 Write-host "Current parameters:"
 Write-host "CQ value chosen: $cq"
