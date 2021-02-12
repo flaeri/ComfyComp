@@ -3,17 +3,17 @@
 #
 ## PICK WHERE YOU WANT THE ROOT TO BE
 #
-$rootLocation = "C:\temp\ComfyComp_v1" #root directory, all folder will be under this. EDIT THIS
+$rootLocation = "C:\temp\ComfyComp_v1" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
 $inputVids = "01 Input"     #
 $outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
 $logs = "03 Logs"           #
 $folders = $rootLocation, $inputVids, $outputVids, $logs
-$cq = 24 #CQ value, lower number, higher quality and bigger files.
-$mr = "100M" #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
-$ll = 24 #loglevel, set 32 if you want normal output. This (24) will only show warnings.
-$ow = "n" #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$cq = 24                    #CQ value, lower number, higher quality and bigger files.
+$mr = "100M"                #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
+$ll = 24                    #loglevel, set 32 if you want normal output. This (24) will only show warnings.
+$ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
 
-### Stop editing stuff now, unless you are every confident in your actions :)
+### Stop editing stuff now, unless you are every confident in your changes :)
 
 Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
@@ -49,7 +49,7 @@ if ( $LASTEXITCODE -eq 1) {
     $bf = 2
     Write-Host "B-Frames =" $bf
 }
-#if b-frames fail, we assume its 10 series or below, and we need to disable more stuff. Dont bully me, I dont care enough to re-write this to not be dumb... I know it is.
+#if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. Dont bully me, I dont care enough to re-write this to not be dumb... I know it is.
 if ($bf -ne 0) {
     $taq = 1
     $ref = 4
@@ -72,13 +72,13 @@ foreach ($folder in $folders) {
     if (Test-Path -Path $folder) {
     Write-Host "$folder confirmed!" -ForegroundColor Green
 }
-
     else {
         write-host "$folder does not exist. Please create it or adjust the paths and folder names at the start of the script, then rerun the script. The script will now exit" -ForegroundColor Red
         pause
         exit
     }
 }
+
 write-host "`n"
 Write-host "Current parameters:"
 Write-host "CQ value chosen: $cq"
