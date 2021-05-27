@@ -1,4 +1,6 @@
-
+*.mp4
+*.mkv
+*.webm
 *.json
 testAppConfig.ps1
 config.xml

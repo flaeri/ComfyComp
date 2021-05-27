@@ -14,11 +14,13 @@ $ll = 24                    #loglevel, set 32 if you want normal output. This (2
 $ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
 $suffix = "comp"            #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
+#
 ### Stop editing stuff now, unless you are every confident in your changes :)
+#
 
 # vars the script needs. Please dont alter.
 $yesNo = "&Yes", "&No"
-$FlaeriFfmpegPath = "C:\ffmpeg"   #Only used if ffmpeg is not found in the users path.
+$FlaeriFfmpegPath = "C:\ffmpeg"  #Only used if ffmpeg is not found in the users path.
 
 Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
@@ -49,7 +51,7 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
             } else {
                 write-host "`n"
                 write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red
-                write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your envoirenment/path" -ForegroundColor red
+                write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your environment/path" -ForegroundColor red
                 write-host "`n"
                 write-host "The script will now exit. Please run it again if you change your mind, or you've installed ffmpeg correctly " -ForegroundColor yellow
             pause
@@ -140,12 +142,12 @@ foreach ($video in $videos) {
 
     Write-host "Encoding $video completed in:"
     $time = select-string -Path $logs\$shortName.log -Pattern 'rtime=(.*)' | ForEach-Object{$_.Matches.Groups[1].Value} #ugly parsing to grab time to complete
-    Write-host "$time seconds" -ForegroundColor Magenta #need that var, wanna post it in multiple places
-    $time | Out-File -FilePath $logs\$shortName-time.txt -Append #want it in the log, append, cute for multile runs.
+    Write-host "$time seconds" -ForegroundColor Magenta
+    $time | Out-File -FilePath $logs\$shortName-time.txt -Append
     write-host "`n"
 
     #remove-item $logs\$shortName.log #remove the full log. #uncomment if you want to clean the logs on completion.
 }
 #CountEm
-Write-Host "videos attempted:" $videos.Count
+Write-Host "Done! Files attempted:" $videos.Count
 pause #hit em up with a nice pause, so they know its done and didnt crash :)
