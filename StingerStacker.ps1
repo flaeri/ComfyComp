@@ -1,3 +1,12 @@
+Function Get-FileName($initialDirectory) {
+    [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
+    $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $OpenFileDialog.initialDirectory = $initialDirectory
+    $OpenFileDialog.ShowDialog() | Out-Null
+    $OpenFileDialog.FileName
+}
+
+
 #Cute banner
 Get-Content .\banner.txt
 write-host "`n"
@@ -9,14 +18,21 @@ write-host "`n"
 
 # TOD: move the FFMPEG checker script to a seperate script.
 
-$inputStinger = $(Read-Host -Prompt 'Please drag your STINGER file into this window now, and hit Enter')
-$inputMatte = $(Read-Host -Prompt 'Please drag your MATTE file into this window now, and hit Enter')
+Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE"
+Pause
 
-#sanetize input
-$inputStinger = $inputStinger -replace '"'
-$inputMatte = $inputMatte -replace '"'
-
-# Get-Content $(Read-host -Prompt "Enter Path")
+$inputStinger = Get-FileName
+if ($inputStinger -eq "") {
+    Write-Host "you didnt select anything, exiting" -ForegroundColor Red
+    Pause
+    exit
+}
+$inputMatte = Get-FileName
+if ($inputStinger -eq "") {
+    Write-Host "you didnt select anything, exiting" -ForegroundColor Red
+    Pause
+    exit
+}
 
 $Name = Get-ChildItem $inputStinger
 
