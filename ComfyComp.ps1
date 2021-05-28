@@ -18,12 +18,6 @@ $suffix = "comp"            #name that is used as a suffix for files in the outp
 ### Stop editing stuff now, unless you are every confident in your changes :)
 #
 
-# vars the script needs. Please dont alter.
-$yesNo = "&Yes", "&No"
-$FlaeriFfmpegPath = "C:\ffmpeg"  #Only used if ffmpeg is not found in the users path.
-
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
-
 #Cute banner
 Get-Content .\banner.txt
 write-host "`n"
@@ -34,31 +28,12 @@ write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily ad
 write-host "`n"
 
 # Testing if ffmpeg in path
-$ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
-    if ($null -eq $ffPath) {
-        if (Test-Path -Path "$FlaeriFfmpegPath\ffmpeg.exe") {
-            $ENV:PATH="$ENV:PATH;$FlaeriFfmpegPath"
-            if (Get-Command ffmpeg) {
-                Write-Host "FFMPEG found!" -ForegroundColor green
-            }
-        } else {
-            Write-Host "ffmpeg was not found in your path, and you've never ran the autoinstall script" -ForegroundColor Red
-            $questionDownload = "Would you like to auto download and have this script call that instead? (Your permanent path will NOT be altered)"
-            $download = $Host.UI.PromptForChoice($questionDownload, $questionDownload, $yesNo, 0)
-            if ($download -eq 0) {
-                Invoke-Expression .\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
-                exit
-            } else {
-                write-host "`n"
-                write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red
-                write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your environment/path" -ForegroundColor red
-                write-host "`n"
-                write-host "The script will now exit. Please run it again if you change your mind, or you've installed ffmpeg correctly " -ForegroundColor yellow
-            pause
-            exit
-        }
-    }
+Invoke-Expression .\ComfyChecker.ps1
+if ($LASTEXITCODE -eq 1) {
+    exit
 }
+
+Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
 #testing for nvenc
 ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -

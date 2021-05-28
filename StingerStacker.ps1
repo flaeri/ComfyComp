@@ -16,9 +16,14 @@ write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor
 write-host "Variable Input Stinger Stacker" -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
-# TOD: move the FFMPEG checker script to a seperate script.
+# Testing if ffmpeg in path
+Invoke-Expression .\ComfyChecker.ps1
+if ($LASTEXITCODE -eq 1) {
+    exit
+}
 
-Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE"
+write-host "`n"
+Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE" -ForegroundColor Yellow
 Pause
 
 $inputStinger = Get-FileName
