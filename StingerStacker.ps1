@@ -17,10 +17,13 @@ write-host "Variable Input Stinger Stacker" -ForegroundColor Magenta -Background
 write-host "`n"
 
 # Testing if ffmpeg in path
-Invoke-Expression .\ComfyChecker.ps1
+Write-Host "Running ComfyChecker" -ForegroundColor Yellow
+Invoke-Expression .\helpers\ComfyChecker.ps1
 if ($LASTEXITCODE -eq 1) {
+    Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
     exit
 }
+Write-Host "Done checking!" -ForegroundColor Green
 
 write-host "`n"
 Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE" -ForegroundColor Yellow

@@ -28,10 +28,13 @@ write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily ad
 write-host "`n"
 
 # Testing if ffmpeg in path
-Invoke-Expression .\ComfyChecker.ps1
+Write-Host "Running ComfyChecker" -ForegroundColor Yellow
+Invoke-Expression .\helpers\ComfyChecker.ps1
 if ($LASTEXITCODE -eq 1) {
+    Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
     exit
 }
+Write-Host "Done checking!" -ForegroundColor Green
 
 Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
