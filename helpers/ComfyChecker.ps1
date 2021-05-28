@@ -16,7 +16,7 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
             $questionDownload = "Would you like to auto download and have this script call that instead? (Your permanent path will NOT be altered)"
             $download = $Host.UI.PromptForChoice("Download?", $questionDownload, $yesNo, 0)
             if ($download -eq 0) {
-                Invoke-Expression .\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
+                Invoke-Expression .\helpers\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
                 exit
             } else {
                 write-host "`n"

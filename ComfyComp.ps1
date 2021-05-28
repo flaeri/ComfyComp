@@ -32,6 +32,7 @@ Write-Host "Running ComfyChecker" -ForegroundColor Yellow
 Invoke-Expression .\helpers\ComfyChecker.ps1
 if ($LASTEXITCODE -eq 1) {
     Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
+    pause
     exit
 }
 Write-Host "Done checking!" -ForegroundColor Green
@@ -86,9 +87,8 @@ foreach ($folder in $folders) {
     Write-Host "$folder confirmed!" -ForegroundColor Green
 }
     else {
-        write-host "$folder does not exist. Please create it or adjust the paths and folder names at the start of the script, then rerun the script. The script will now exit" -ForegroundColor Red
-        pause
-        exit
+        write-host "$folder does not exist. Creating." -ForegroundColor Yellow
+        mkdir $folder
     }
 }
 
