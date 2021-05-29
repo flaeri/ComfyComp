@@ -1,9 +1,29 @@
-﻿#
-### User adjustable stuff.
-#
-## PICK WHERE YOU WANT THE ROOT TO BE
-#
-$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
+﻿#loading functions
+. .\helpers\commonFunctions.ps1
+
+# Try reading config
+$configPath = ".\config.json"
+if (test-path $configPath) {
+    $config = Read-Config $configPath
+    write-host "contents of config $config"
+    pause
+} else {
+    write-host "Config NOT found!" -ForegroundColor Red
+    write-host "Creating config"
+    $rootLocation = get-folder
+    Write-Config $configPath $rootLocation
+    $config = Read-Config $configPath
+    pause
+}
+
+$rootLocation = $config.rootlocation
+write-host "Contensts of root loc $rootLocation"
+pause
+
+Write-Host $rootLocation
+pause
+
+#$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
 $inputVids = "01 Input"     #
 $outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
 $logs = "03 Logs"           #
