@@ -3,25 +3,26 @@
 
 # Try reading config
 $configPath = ".\config.json"
+
 if (test-path $configPath) {
     $config = Read-Config $configPath
-    write-host "contents of config $config"
-    pause
 } else {
     write-host "Config NOT found!" -ForegroundColor Red
-    write-host "Creating config"
+    write-host "Creating config, please select where you want your files `n"
     $rootLocation = get-folder
+
     Write-Config $configPath $rootLocation
     $config = Read-Config $configPath
-    pause
 }
 
+#testing rootLocation is valid and exists
 $rootLocation = $config.rootlocation
-write-host "Contensts of root loc $rootLocation"
-pause
-
-Write-Host $rootLocation
-pause
+if (!(test-path $rootLocation)) {
+    write-host "The location ($rootLocation) you've chosen seem to be invalid or missing." -ForegroundColor Red
+    write-host "Please modify $configPath, or delete it to start over" -ForegroundColor Red
+    pause
+    exit
+}
 
 #$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
 $inputVids = "01 Input"     #

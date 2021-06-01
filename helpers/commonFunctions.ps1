@@ -32,9 +32,8 @@ Function Write-Config
     )
     @{
         rootlocation = $rootLocation
-        test = "test"
     } | ConvertTo-Json | Out-File $path
-    write-host "Config written!" -ForegroundColor green
+    write-host "Config written! `n" -ForegroundColor green
 }
 
 Function Read-Config
