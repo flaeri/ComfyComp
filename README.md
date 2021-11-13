@@ -31,9 +31,10 @@ Make sure you've added ffmpeg to your envoirenment path.
 ## How to
  
 1. Download the latest release, and extract it anywhere. https://github.com/flaeri/ComfyComp/releases
-    a. Optionally edit the ComfyComp script if you would like different in/output names etc. Do so towards the top.
-2. Add some video files to the input folder (01 input, by default)
-3. Run the powershell script "ComfyComp.ps1" (right click > run in powershell)
+
+   a. Optionally edit the ComfyComp script if you would like different in/output names etc. Do so towards the top.
+3. Add some video files to the input folder (01 input, by default)
+4. Run the powershell script "ComfyComp.ps1" (right click > run in powershell)
 
 If you get powershell errors complaing about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
 Please read this: https://docs.microsoft.com/previous-versions//bb613481(v=vs.85)
