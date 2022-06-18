@@ -27,18 +27,20 @@ https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z
 Make sure you've added ffmpeg to your envoirenment path.
 
 ----
- 
-1. Download the zip files from releases, and extract them where you would like the folders and videos to be.
-2. Adjust the script and $rootLocation to the location from step 1.
-    
-    a. If you plan on changing the folder names, make sure the folder names match what is written in the top of the script.
 
+## How to
+ 
+1. Download the latest release, and extract it anywhere. https://github.com/flaeri/ComfyComp/releases
+
+   a. Optionally edit the ComfyComp script if you would like different in/output names etc. Do so towards the top.
 3. Add some video files to the input folder (01 input, by default)
 4. Run the powershell script "ComfyComp.ps1" (right click > run in powershell)
 
 If you get powershell errors complaing about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
 Please read this: https://docs.microsoft.com/previous-versions//bb613481(v=vs.85)
 
-**TLDR: run powershell as admin, and run "set-executionpolicy remotesigned"**
-
+**TLDR: run powershell as admin, and run the following**
+```
+set-executionpolicy remotesigned
+```
 The script will offer to auto download a compatible (recent) ffmpeg build to C:\ffmpeg and use that if you don't want to do it yourself.

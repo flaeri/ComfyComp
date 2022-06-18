@@ -1,4 +1,3 @@
-test for latest new nvenc api
-    This is kind of alread built into ffmpeg, people will know "version old" to mean, their ffmpeg is old.
+Moving config and folders to common function.
 
 Escape / fix ' ffmpeg fail in FFREPORT

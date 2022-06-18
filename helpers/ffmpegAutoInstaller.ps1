@@ -10,7 +10,7 @@ if (Test-Path "$ffmpegPath\ffmpeg.exe") {
     Write-Host "$ffmpegPath does not exist, downloading it." -ForegroundColor Yellow
     $ProgressPreference = 'SilentlyContinue' #its very slow to download without this
     Write-Host "We're downloading. Please be patient :)"
-    Invoke-WebRequest -Uri https://otterbro.com/ffmpeg20210106.zip -outfile "ffmpeg.zip"
+    Invoke-WebRequest -Uri https://otterbro.com/ffmpeg.zip -outfile "ffmpeg.zip"
     $ProgressPreference = 'Continue'
     mkdir -path "$ffmpegPath" -ErrorAction SilentlyContinue
     Expand-Archive -path "ffmpeg.zip" $ffmpegPath
