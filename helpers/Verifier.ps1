@@ -22,14 +22,20 @@ if (test-path $configPath) {
 
 #testing rootLocation is valid and exists
 $rootLocation = $config.rootlocation
-if (!(test-path $rootLocation)) {
+while ($null -eq $rootlocation) {
     write-host "The location ($rootLocation) you've chosen seem to be invalid or missing." -ForegroundColor Red
     write-host "Please modify $configPath, or delete it to start over" -ForegroundColor Red
-    pause
-    exit
+    $confirmation = Read-Host "Would you like to delete the file (y/n)?"
+    if ($confirmation -eq 'y') {
+        Remove-Item -Path ".\config.json"
+        . .\helpers\Verifier.ps1
+    }
+    
+    $config = Read-Config $configPath
+    $rootLocation = $config.rootlocation
 }
 
-#$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
+
 $inputVids = "01 Input"     #
 $outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
 $logs = "03 Logs"           #
@@ -46,6 +52,7 @@ if ($LASTEXITCODE -eq 1) {
     write-host "OK!" -ForegroundColor Green
 }
 
+Push-Location -Path $rootLocation
 #where you at
 write-host "`n"
 write-host "Working directory: $PWD"
@@ -59,6 +66,7 @@ foreach ($folder in $folders) {
         mkdir $folder
     }
 }
+Pop-Location
 
 write-host "`n"
 Write-Host "Done checking!" -ForegroundColor Green
