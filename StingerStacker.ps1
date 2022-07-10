@@ -1,50 +1,9 @@
 #loading functions
 . .\helpers\commonFunctions.ps1
+. .\helpers\Verifier.ps1
 
-# Try reading config
-$configPath = ".\config.json"
-
-if (test-path $configPath) {
-    $config = Read-Config $configPath
-} else {
-    write-host "Config NOT found!" -ForegroundColor Red
-    write-host "Creating config, please select where you want your files `n"
-    $rootLocation = get-folder
-
-    Write-Config $configPath $rootLocation
-    $config = Read-Config $configPath
-}
-
-#testing rootLocation is valid and exists
-$rootLocation = $config.rootlocation
-if (!(test-path $rootLocation)) {
-    write-host "The location ($rootLocation) you've chosen seem to be invalid or missing." -ForegroundColor Red
-    write-host "Please modify $configPath, or delete it to start over" -ForegroundColor Red
-    pause
-    exit
-}
-
-$inputVids = "01 Input"     #
-$outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
-$logs = "03 Logs"           #
-
-#Cute banner
-Get-Content .\banner.txt
-write-host "`n"
-
-# tagline, and shilling
-write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor black
 write-host "Variable Input Stinger Stacker" -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
-
-# Testing if ffmpeg in path
-Write-Host "Running ComfyChecker" -ForegroundColor Yellow
-Invoke-Expression .\helpers\ComfyChecker.ps1
-if ($LASTEXITCODE -eq 1) {
-    Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
-    exit
-}
-Write-Host "Done checking!" -ForegroundColor Green
 
 write-host "`n"
 Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE" -ForegroundColor Yellow
@@ -62,6 +21,8 @@ if ($inputStinger -eq "") {
     Pause
     exit
 }
+
+Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
 
 $Name = Get-ChildItem $inputStinger
 
