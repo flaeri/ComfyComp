@@ -4,15 +4,13 @@
 
 # Settings
 $ll = "24"      #loglevel, set 32 if you want normal output. This (24) will only show warnings.
-$ow = "y"       #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$ow = "n"       #overwrite files in output dir. Switch to "y" (yes), if you would like.
 
 #
 ### Stop editing stuff now, unless you are every confident in your changes :)
 #
 
-$hb = "-hide_banner"
-
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
 write-host "`n"
 Write-Output "This script will copy individual audio tracks to seperate files"
@@ -30,7 +28,7 @@ foreach ($video in $videos) {
     Write-host "Start processing: $video"
     write-host "`n"
 
-    $probeData = ffprobe $hb -loglevel quiet $inputVids\$video -show_streams | select-string -pattern 'codec_type=audio'
+    $probeData = ffprobe -hide_banner -loglevel quiet $inputVids\$video -show_streams | select-string -pattern 'codec_type=audio'
     $numAudioStreams = $probeData.Length
     write-host "$video has $numAudioStreams tracks"
 

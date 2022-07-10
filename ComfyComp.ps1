@@ -16,7 +16,7 @@ $suffix = "comp"    #name that is used as a suffix for files in the output folde
 write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
 #testing for nvenc
 ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -

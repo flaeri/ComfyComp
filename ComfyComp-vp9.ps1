@@ -3,9 +3,9 @@
 . .\helpers\Verifier.ps1
 
 #settings
-$ll = 24                    #loglevel, set 32 if you want normal output. This (24) will only show warnings.
-$ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
-$suffix = "vp9fix"            #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
+$ll = 24            #loglevel, set 32 if you want normal output. This (24) will only show warnings.
+$ow = "n"           #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$suffix = "vp9fix"  #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
 #
 ### Stop editing stuff now, unless you are every confident in your changes :)
@@ -14,7 +14,7 @@ $suffix = "vp9fix"            #name that is used as a suffix for files in the ou
 write-host "Stinger fixer. Re-encodes potentially wonky alpha videos" -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
 write-host "`n"
 Write-Host "Please select the stinger file" -ForegroundColor Yellow

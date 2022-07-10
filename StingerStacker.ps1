@@ -22,7 +22,7 @@ if ($inputStinger -eq "") {
     exit
 }
 
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
 $Name = Get-ChildItem $inputStinger
 
