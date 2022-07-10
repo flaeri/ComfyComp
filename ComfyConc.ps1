@@ -26,6 +26,7 @@ if (test-path videos.txt) {
 
 foreach ($i in Get-ChildItem .\$inputVids) {
     "file '$inputVids\$i'" | Out-File -Encoding oem -append -FilePath videos.txt
+    $ext = $i.Extension #useful for naming
 }
 
 write-host "`n"
@@ -40,7 +41,7 @@ $time = get-date -Format dd-MM-yy_HH-MM-ss
 
 write-host "`n"
 Write-Host "Run initiated, please be patient." -ForegroundColor Yellow
-ffmpeg -$ow -benchmark -loglevel $ll -f concat -safe 0 -i .\videos.txt -c copy $outputVids\$time-$suffix.mp4
+ffmpeg -$ow -benchmark -loglevel $ll -f concat -safe 0 -i .\videos.txt -c copy $outputVids\$time-$suffix$ext
 
 write-host "`n"
 Write-Host "Done! Cleaning up temp file. Hit a key to exit" -ForegroundColor Yellow
