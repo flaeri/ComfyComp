@@ -57,3 +57,4 @@ if ($inputCodec -eq "vp9") {
 #CountEm
 Write-Host "done! Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Green
 pause #hit em up with a nice pause, so they know its done and didn't crash :)
+exit 0

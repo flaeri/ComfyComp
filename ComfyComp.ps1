@@ -113,3 +113,4 @@ foreach ($video in $videos) {
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
 pause #hit em up with a nice pause, so they know its done and didn't crash :)
+exit 0

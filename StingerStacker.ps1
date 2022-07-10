@@ -57,3 +57,4 @@ if ($inputCodec -eq "vp9") {
 write-host "`r"
 Write-Host "done! Please test $outputVids\$shortName-stacked.webm" -ForegroundColor Green
 pause
+exit 0

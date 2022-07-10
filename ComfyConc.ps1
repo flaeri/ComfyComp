@@ -53,3 +53,4 @@ Write-Host "Done! Cleaning up temp file. Hit a key to exit" -ForegroundColor Yel
 Remove-Item videos.txt
 
 pause
+exit 0
