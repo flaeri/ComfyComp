@@ -19,10 +19,10 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
                 Invoke-Expression .\helpers\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
                 exit
             } else {
-                write-host "`n"
+                write-host "`r"
                 write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red
                 write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your environment/path" -ForegroundColor red
-                write-host "`n"
+                write-host "`r"
                 write-host "The script will now exit. Please run it again if you change your mind, or you've installed ffmpeg correctly " -ForegroundColor yellow
             pause
             exit 1

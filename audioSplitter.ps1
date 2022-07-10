@@ -17,11 +17,11 @@ $ow = "n"       #overwrite files in output dir. Switch to "y" (yes), if you woul
 
 Push-Location -path $rootLocation #Don't edit edit this, edit the config.json or delete it
 
-write-host "`n"
+write-host "`r"
 Write-Output "This script will copy individual audio tracks to separate files"
 Write-Output "Hit Enter to start, or ctrl+c / exit the window to stop"
 pause
-write-host "`n"
+write-host "`r"
 
 #grab the items in the input folder
 $videos = Get-ChildItem -Path $inputVids -Recurse
@@ -30,12 +30,13 @@ $videos = Get-ChildItem -Path $inputVids -Recurse
 foreach ($video in $videos) {
     $shortName = $video.BaseName #useful for naming.
     $ext = $video.Extension #useful for naming
+    Write-host "--- Start ---"
     Write-host "Start processing: $video"
-    write-host "`n"
+    write-host "`r"
 
     $probeData = ffprobe -hide_banner -loglevel quiet $inputVids\$video -show_streams | select-string -pattern 'codec_type=audio'
     $numAudioStreams = $probeData.Length
-    write-host "$video has $numAudioStreams tracks"
+    write-host "$video has $numAudioStreams track(s)"
 
     $i = 0
     $startTime = get-date
@@ -49,10 +50,9 @@ foreach ($video in $videos) {
     $endTime = get-date
     $time = new-timespan -start $startTime -End $endTime
 
-    write-host "`n"
-    Write-host "Encoding $video completed in:"
-    Write-host $time -ForegroundColor Magenta
-    write-host "`n"
+    write-host "`r"
+    Write-host "$video completed in: $time" -ForegroundColor Magenta
+    Write-host "--- End ---"
 }
 
 #CountEm

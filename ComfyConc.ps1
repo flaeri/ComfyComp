@@ -20,7 +20,7 @@ $suffix = "conc"            #name that is used as a suffix for files in the outp
 ### Stop editing stuff now, unless you are every confident in your changes :)
 #
 write-host "Concatenate files. Please ensure they are all the same (settings, container (extension), or output may fail" -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
 Push-Location -path $rootLocation #Don't edit edit this. Delete your config file, or modify it
 
@@ -34,7 +34,7 @@ foreach ($i in Get-ChildItem .\$inputVids) {
     $ext = $i.Extension #useful for naming
 }
 
-write-host "`n"
+write-host "`r"
 Write-Host "Found the following files:" -ForegroundColor Yellow
 Get-Content .\videos.txt
 
@@ -44,11 +44,11 @@ $start = $Host.UI.PromptForChoice("Start?", $qProceed, $yesNo, 0)
                 exit}
 $time = get-date -Format dd-MM-yy_HH-MM-ss
 
-write-host "`n"
+write-host "`r"
 Write-Host "Run initiated, please be patient." -ForegroundColor Yellow
 ffmpeg -$ow -benchmark -loglevel $ll -f concat -safe 0 -i .\videos.txt -c copy $outputVids\$time-$suffix$ext
 
-write-host "`n"
+write-host "`r"
 Write-Host "Done! Cleaning up temp file. Hit a key to exit" -ForegroundColor Yellow
 Remove-Item videos.txt
 

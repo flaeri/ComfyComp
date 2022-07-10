@@ -1,10 +1,10 @@
 #Cute banner
 Get-Content .\banner.txt
-write-host "`n"
+write-host "`r"
 
 # tagline, and shilling
 write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
 # Try reading config
 $configPath = ".\config.json"
@@ -54,7 +54,7 @@ if ($LASTEXITCODE -eq 1) {
 
 Push-Location -Path $rootLocation
 #where you at
-write-host "`n"
+write-host "`r"
 write-host "Working directory: $PWD"
 #testing folders
 foreach ($folder in $folders) {
@@ -68,5 +68,5 @@ foreach ($folder in $folders) {
 }
 Pop-Location
 
-write-host "`n"
+write-host "`r"
 Write-Host "Done checking!" -ForegroundColor Green

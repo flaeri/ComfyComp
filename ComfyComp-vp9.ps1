@@ -17,11 +17,11 @@ $suffix = "vp9fix"  #name that is used as a suffix for files in the output folde
 #
 
 write-host "Stinger fixer. Re-encodes potentially wonky alpha videos" -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
 Push-Location -path $rootLocation #Don't edit edit this, edit the config.json or delete it
 
-write-host "`n"
+write-host "`r"
 Write-Host "Please select the stinger file" -ForegroundColor Yellow
 Pause
 

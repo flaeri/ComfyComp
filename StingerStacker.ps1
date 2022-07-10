@@ -8,9 +8,9 @@ Push-Location $dir
 . .\helpers\Verifier.ps1
 
 write-host "Variable Input Stinger Stacker" -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
-write-host "`n"
+write-host "`r"
 Write-Host "You will be prompted to select two files. First select the STINGER, and then pick the MATTE" -ForegroundColor Yellow
 Pause
 
@@ -34,7 +34,7 @@ $Name = Get-ChildItem $inputStinger
 $shortName = $Name.BaseName
 $inputCodec = ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 $inputStinger
 
-write-host "`n"
+write-host "`r"
 Write-Host "Working on it, promise, please be patient" -ForegroundColor Yellow
 
 if ($inputCodec -eq "vp9") {
@@ -54,6 +54,6 @@ if ($inputCodec -eq "vp9") {
     -pix_fmt yuva420p $outputVids\$shortName-stacked.webm
 }
 
-write-host "`n"
+write-host "`r"
 Write-Host "done! Please test $outputVids\$shortName-stacked.webm" -ForegroundColor Green
 pause

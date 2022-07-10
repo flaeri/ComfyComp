@@ -19,7 +19,7 @@ $suffix = "comp"    #name that is used as a suffix for files in the output folde
 #
 
 write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
 Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
@@ -36,7 +36,7 @@ if ( $LASTEXITCODE -eq 1) {
 
 #testing hevc b-frames
 ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
-Write-Host "`n"
+Write-Host "`r"
 if ( $LASTEXITCODE -eq 1) {
     write-host "HEVC B-frames not supported on your chip" -ForegroundColor Red
     $bf = 0
@@ -61,7 +61,7 @@ if ($bf -ne 0) {
 Write-Host "Temporal AQ = $taq"
 Write-Host "Reference frames = $ref"
 Write-Host "B reference = $bref"
-write-host "`n"
+write-host "`r"
 
 #where you at
 write-host "Working directory: $PWD"
@@ -76,16 +76,16 @@ foreach ($folder in $folders) {
     }
 }
 
-write-host "`n"
+write-host "`r"
 Write-host "Current parameters:"
 Write-host "CQ value chosen: $cq"
 Write-host "Maxrate: $mr"
 Write-host "overwriting output files: $ow"
-write-host "`n"
+write-host "`r"
 
 Write-Output "Hit Enter to start, or ctrl+c / exit the window to stop"
 pause
-write-host "`n"
+write-host "`r"
 
 #grab the items in the input folder
 $videos = Get-ChildItem -Path $inputVids -Recurse
@@ -95,7 +95,7 @@ foreach ($video in $videos) {
     $shortName = $video.BaseName #useful for naming.
     $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an environment variable, cus it needs to be known before we fire.
     Write-host "Start encoding: $video"
-    write-host "`n"
+    write-host "`r"
 
     #multi line drifting
     ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i $inputVids\$video -map 0 -c:v hevc_nvenc -refs $ref `
@@ -106,7 +106,7 @@ foreach ($video in $videos) {
     $time = select-string -Path $logs\$shortName.log -Pattern 'rtime=(.*)' | ForEach-Object{$_.Matches.Groups[1].Value} #ugly parsing to grab time to complete
     Write-host "$time seconds" -ForegroundColor Magenta
     $time | Out-File -FilePath $logs\$shortName-time.txt -Append
-    write-host "`n"
+    write-host "`r"
 
     #remove-item $logs\$shortName.log #remove the full log. #uncomment if you want to clean the logs on completion.
 }
