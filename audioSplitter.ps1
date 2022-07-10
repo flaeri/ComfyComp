@@ -15,10 +15,10 @@ $ow = "n"       #overwrite files in output dir. Switch to "y" (yes), if you woul
 ### Stop editing stuff now, unless you are every confident in your changes :)
 #
 
-Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
+Push-Location -path $rootLocation #Don't edit edit this, edit the config.json or delete it
 
 write-host "`n"
-Write-Output "This script will copy individual audio tracks to seperate files"
+Write-Output "This script will copy individual audio tracks to separate files"
 Write-Output "Hit Enter to start, or ctrl+c / exit the window to stop"
 pause
 write-host "`n"
@@ -57,4 +57,4 @@ foreach ($video in $videos) {
 
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
-pause #hit em up with a nice pause, so they know its done and didnt crash :)
+pause #hit em up with a nice pause, so they know its done and didn't crash :)

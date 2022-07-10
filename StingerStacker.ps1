@@ -16,18 +16,18 @@ Pause
 
 $inputStinger = Get-FileName
 if ($inputStinger -eq "") {
-    Write-Host "you didnt select anything, exiting" -ForegroundColor Red
+    Write-Host "you didn't select anything, exiting" -ForegroundColor Red
     Pause
     exit
 }
 $inputMatte = Get-FileName
 if ($inputStinger -eq "") {
-    Write-Host "you didnt select anything, exiting" -ForegroundColor Red
+    Write-Host "you didn't select anything, exiting" -ForegroundColor Red
     Pause
     exit
 }
 
-Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
+Push-Location -path $rootLocation #Don't edit edit this, edit the config.json or delete it
 
 $Name = Get-ChildItem $inputStinger
 

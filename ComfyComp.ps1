@@ -10,7 +10,7 @@ Push-Location $dir
 # Settings
 $ow = "n"           #overwrite files in output dir. Switch to "y" (yes), if you would like.
 $cq = 24            #CQ value, lower number, higher quality and bigger files.
-$mr = "100M"        #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
+$mr = "100M"        #maxrate, 100mbit shouldn't need to change unless its huge resolution, also does bufsize
 $ll = 24            #loglevel, set 32 if you want normal output. This (24) will only show warnings.
 $suffix = "comp"    #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
@@ -41,13 +41,13 @@ if ( $LASTEXITCODE -eq 1) {
     write-host "HEVC B-frames not supported on your chip" -ForegroundColor Red
     $bf = 0
     Write-Host "B-Frames =" $bf
-    write-host "We will continue without them :) some other features also need to be disabled" -ForegroundColor Yellow -BackgroundColor Black
+    write-host "We will continue without them :) Some other features also need to be disabled" -ForegroundColor Yellow -BackgroundColor Black
 } else {
     write-host "HEVC B-frames ARE supported on your chip, yay!" -ForegroundColor Green
     $bf = 2
     Write-Host "B-Frames =" $bf
 }
-#if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. Dont bully me, I dont care enough to re-write this to not be dumb... I know it is.
+#if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. This is stupid, and I'm okay with that.
 if ($bf -ne 0) {
     $taq = 1
     $ref = 4
@@ -93,7 +93,7 @@ $videos = Get-ChildItem -Path $inputVids -Recurse
 #loop them all.
 foreach ($video in $videos) {
     $shortName = $video.BaseName #useful for naming.
-    $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an envoirenment variable, cus it needs to be known before we fire.
+    $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an environment variable, cus it needs to be known before we fire.
     Write-host "Start encoding: $video"
     write-host "`n"
 
@@ -112,4 +112,4 @@ foreach ($video in $videos) {
 }
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
-pause #hit em up with a nice pause, so they know its done and didnt crash :)
+pause #hit em up with a nice pause, so they know its done and didn't crash :)

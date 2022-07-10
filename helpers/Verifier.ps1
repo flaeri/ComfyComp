@@ -63,7 +63,7 @@ foreach ($folder in $folders) {
 }
     else {
         write-host "$folder does not exist. Creating." -ForegroundColor Yellow
-        mkdir $folder
+        New-Item $folder
     }
 }
 Pop-Location

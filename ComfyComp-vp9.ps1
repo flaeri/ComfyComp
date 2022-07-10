@@ -19,7 +19,7 @@ $suffix = "vp9fix"  #name that is used as a suffix for files in the output folde
 write-host "Stinger fixer. Re-encodes potentially wonky alpha videos" -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
-Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
+Push-Location -path $rootLocation #Don't edit edit this, edit the config.json or delete it
 
 write-host "`n"
 Write-Host "Please select the stinger file" -ForegroundColor Yellow
@@ -27,7 +27,7 @@ Pause
 
 $inputStinger = Get-FileName
 if ($inputStinger -eq "") {
-    Write-Host "you didnt select anything, exiting" -ForegroundColor Red
+    Write-Host "you didn't select anything, exiting" -ForegroundColor Red
     Pause
     exit
 }
@@ -56,4 +56,4 @@ if ($inputCodec -eq "vp9") {
 }
 #CountEm
 Write-Host "done! Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Green
-pause #hit em up with a nice pause, so they know its done and didnt crash :)
+pause #hit em up with a nice pause, so they know its done and didn't crash :)

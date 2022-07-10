@@ -1,6 +1,6 @@
 # ComfyComp
 
-## This dosent even work!!
+## This doesn't even work?!!1
 
 If this is the first time running any powershell scripts on this computer, you'll need to setup an execution policy (and potentially unblock files).
 
@@ -16,11 +16,11 @@ Will compress video files with what I would deem reasonably high quality, and ma
 It will attempt take *any* files in the input folder, and spit out hevc nvenc compressed files (using VBR-CQ), and possibly with b-frames if you have support for it. It also logs certain information, and gives you time to completion.
 
 This will *only* work for people with nvidia cards that support HEVC.
-That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preffered.
+That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preferred.
 
 * audioSplitter
 
-Takes all the files in the input folder, and seperates out a single file per audio track. Sometimes usefuly for video editors without multi track audio support.'
+Takes all the files in the input folder, and separates out a single file per audio track. Sometimes useful for video editors without multi track audio support.'
 
 * StingerStacker
 
@@ -33,7 +33,7 @@ Tries to encode files with alpha into vp9 coded webm files. Useful for existing 
 
 * ComfyConc
 
-concatenates (merge/stitch) all the files in the input folder into a single output file. It will not re-encode, just smash them togehtger. All the input files *must* be as identical in terms of format, codec, container etc, or it will fail.
+concatenates (merge/stitch) all the files in the input folder into a single output file. It will not re-encode, just smash them together. All the input files *must* be as identical in terms of format, codec, container etc, or it will fail.
 
 Useful for software that outputs video in segments.
 
@@ -47,7 +47,7 @@ Make sure the following is in place:
 Requires ffmpeg in your path, which has the new nvenc API. You can grab it from here if you need it:
 https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z
 
-Make sure you've added ffmpeg to your envoirenment path.
+Make sure you've added ffmpeg to your environment path.
 
 ----
 
@@ -60,7 +60,7 @@ Make sure you've added ffmpeg to your envoirenment path.
 4. Run "01help-fix.cmd" first (unless you're confident you can run downloaded ps)
 5. Run the powershell scripts (right click > run in powershell)
 
-If you get powershell errors complaing about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
+If you get powershell errors complaining about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
 Please read this: https://docs.microsoft.com/previous-versions//bb613481(v=vs.85)
 
 **TLDR: run "01-help-fix.cmd"**

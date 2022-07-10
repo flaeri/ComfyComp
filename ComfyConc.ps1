@@ -22,7 +22,7 @@ $suffix = "conc"            #name that is used as a suffix for files in the outp
 write-host "Concatenate files. Please ensure they are all the same (settings, container (extension), or output may fail" -ForegroundColor Magenta -BackgroundColor black
 write-host "`n"
 
-Push-Location -path $rootLocation #Dont edit edit this. Delete your config file, or modify it
+Push-Location -path $rootLocation #Don't edit edit this. Delete your config file, or modify it
 
 #grab the items in the input folder
 if (test-path videos.txt) {
