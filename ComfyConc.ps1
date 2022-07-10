@@ -1,3 +1,8 @@
+#push script location
+$scriptPath = $MyInvocation.MyCommand.Path
+$dir = Split-Path $scriptPath
+Push-Location $dir
+
 #loading functions
 . .\helpers\commonFunctions.ps1
 . .\helpers\Verifier.ps1
