@@ -1,68 +1,70 @@
 # ComfyComp
 
-## This doesn't even work?!!1
+## Overview
 
-If this is the first time running any powershell scripts on this computer, you'll need to setup an execution policy (and potentially unblock files).
+<p align="center"> A suite of powershell scripts relying on FFmpeg to achieve different tasks. Intended for Windows </p>
 
-Quick fix to this is to run (double click) the "01help-fix.cmd" file. It will setup the safest policy it can while still allowing you to run the scripts in this folder.
+## Getting Started
 
-You may also run this if you've recently updated the scripts, and one of them no longer works (due to update).
+1. Download the latest release from [here](https://github.com/flaeri/ComfyComp/releases)
+2. Unzip to any location
+3. Run (double click) "01help-fix.cmd"
+5. Try running any of the scripts by right clicking it > run with powershell
 
-### What is this???
+	a. In order to test most of them, you need to place some files in the `01 Input` folder
 
-* ComfyComp
+<br>
 
-Will compress video files with what I would deem reasonably high quality, and maximize compression, in a quick manner using nvenc.
-It will attempt take *any* files in the input folder, and spit out hevc nvenc compressed files (using VBR-CQ), and possibly with b-frames if you have support for it. It also logs certain information, and gives you time to completion.
+You'll be prompted for a location where you would like the media files to be stored, so that they can be seperate from where the scripts are. This is only for the first run, and will be stored.
+
+If you choose to move them later, you can delete the "config.json" file, and you'll get prompted again for the location.
+
+If you dont have FFmpeg in your `PATH`, you'll be offered to download it to a predetermined location (C:\ffmpeg). Its a cut down version of [Gyan's release build](https://www.gyan.dev/ffmpeg/builds/)
+
+----------------------
+
+### Settings
+
+If you edit any of the scripts, you'll often find some settings towards the top.
+
+There you can change some behaviors, like if files in the output folder should get overwritten, more verbose log output etc
+
+----------------------
+
+## Script overview
+
+### ComfyComp
+
+Will compress video files with reasonably high quality, and maximize compression, in a quick manner using nvenc.
+It will attempt take *any* files in the input folder, and output HEVC compressed files (using VBR-CQ), possibly with b-frames if supported. It also logs certain information, and gives you time to completion.
 
 This will *only* work for people with nvidia cards that support HEVC.
 That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preferred.
 
-* audioSplitter
+### audioSplitter
 
 Takes all the files in the input folder, and separates out a single file per audio track. Sometimes useful for video editors without multi track audio support.'
 
-* StingerStacker
+### StingerStacker
 
 Will *attempt* to horizontally stack two files, with alpha channel intact. Useful for track matte stingers in [OBS Studio](https://github.com/obsproject/obs-studio)
 
+### ComfyComp-vp9
 
-* ComfyComp-vp9
+Tries to encode files with alpha into vp9 coded webm files. Useful for existing vp9 encodes that are wonky, or if you want to convert your files to vp9 webm with alpha channel.
 
-Tries to encode files with alpha into vp9 coded webm files. Useful for existing vp9 encodes that are wonky, or if you just want to convert your files to vp9 webm.
+### ComfyConc
 
-* ComfyConc
+concatenates (merge/stitch) all the files in the input folder into a single output file. It will not re-encode, just smash them together. All the input files *must* be identical in terms of format, codec, container etc, or it will fail.
 
-concatenates (merge/stitch) all the files in the input folder into a single output file. It will not re-encode, just smash them together. All the input files *must* be as identical in terms of format, codec, container etc, or it will fail.
+Useful for software that outputs video in segments, and you would like a single file.
 
-Useful for software that outputs video in segments.
+----------------------
 
-----
+## FAQ / Support
 
-**You have the option to have the script auto download FFMPEG to a specified location, and use that**
+### Unable to run the powershell scripts
+![image](https://user-images.githubusercontent.com/50419942/178776849-ce997b2e-d35d-44e3-8310-63e1d02bcc64.png)
 
-If you would like to download or use your own build, and add it to your path, feel free to do so. Make sure you're up to date so you have the latest Nvenc API.
-Make sure the following is in place:
+Answer: Please run the "01help-fix.cmd" file. This will allow the bare minimum of powershell scripts to run, and unblock any scripts in the folder.
 
-Requires ffmpeg in your path, which has the new nvenc API. You can grab it from here if you need it:
-https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z
-
-Make sure you've added ffmpeg to your environment path.
-
-----
-
-## How to
- 
-1. Download the latest release, and extract it anywhere. https://github.com/flaeri/ComfyComp/releases
-
-   a. Optionally edit the ComfyComp script if you would like different in/output names etc. Do so towards the top.
-3. Add some video files to the input folder (01 input, by default)
-4. Run "01help-fix.cmd" first (unless you're confident you can run downloaded ps)
-5. Run the powershell scripts (right click > run in powershell)
-
-If you get powershell errors complaining about script not being signed, you need to allow running unsigned powershell scripts on your local computer.
-Please read this: https://docs.microsoft.com/previous-versions//bb613481(v=vs.85)
-
-**TLDR: run "01-help-fix.cmd"**
-
-The script will offer to auto download a compatible (recent) ffmpeg build to C:\ffmpeg and use that if you don't want to do it yourself.
