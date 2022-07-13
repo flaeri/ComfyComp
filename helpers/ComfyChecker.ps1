@@ -1,6 +1,6 @@
 # checking for ffmpeg and potentially downloading and adding to path.
 
-# vars the script needs. Please dont alter.
+# vars the script needs. Please don't alter.
 $yesNo = "&Yes", "&No"
 $FlaeriFfmpegPath = "C:\ffmpeg"  #Only used if ffmpeg is not found in the users path.
 
@@ -9,10 +9,10 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
     if ($null -eq $ffPath) {
         Write-Host "Did NOT find ffmpeg in path" -ForegroundColor Yellow
         if (Test-Path -Path "$FlaeriFfmpegPath\ffmpeg.exe") {
-            Write-Host "Found ffmpeg in $FlaeriFfmpegPath, adding to path" -ForegroundColor Green
+            Write-Host "Found ffmpeg in $FlaeriFfmpegPath, adding to temp path" -ForegroundColor Green
             $ENV:PATH="$ENV:PATH;$FlaeriFfmpegPath"
         } else {
-            Write-Host "ffmpeg was not found in your path, and you've never ran the autoinstall script" -ForegroundColor Red
+            Write-Host "ffmpeg was not found in your path, and you've never ran the auto-install script" -ForegroundColor Red
             $questionDownload = "Would you like to auto download and have this script call that instead? (Your permanent path will NOT be altered)"
             $download = $Host.UI.PromptForChoice("Download?", $questionDownload, $yesNo, 0)
             if ($download -eq 0) {

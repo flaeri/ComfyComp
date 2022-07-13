@@ -1,64 +1,27 @@
-﻿#loading functions
+﻿#push script location
+$scriptPath = $MyInvocation.MyCommand.Path
+$dir = Split-Path $scriptPath
+Push-Location $dir
+
+#loading functions
 . .\helpers\commonFunctions.ps1
+. .\helpers\Verifier.ps1
 
-# Try reading config
-$configPath = ".\config.json"
-
-if (test-path $configPath) {
-    $config = Read-Config $configPath
-} else {
-    write-host "Config NOT found!" -ForegroundColor Red
-    write-host "Creating config, please select where you want your files `n"
-    $rootLocation = get-folder
-
-    Write-Config $configPath $rootLocation
-    $config = Read-Config $configPath
-}
-
-#testing rootLocation is valid and exists
-$rootLocation = $config.rootlocation
-if (!(test-path $rootLocation)) {
-    write-host "The location ($rootLocation) you've chosen seem to be invalid or missing." -ForegroundColor Red
-    write-host "Please modify $configPath, or delete it to start over" -ForegroundColor Red
-    pause
-    exit
-}
-
-#$rootLocation = "C:\temp\ComfyComp" #root directory, all folders will be under this. Make sure you modify this to match where you extracted the contents.
-$inputVids = "01 Input"     #
-$outputVids = "02 Output"   # Feel free to name them whatever you want, but they need to exist. This is the default names of the folders provided.
-$logs = "03 Logs"           #
-$folders = $rootLocation, $inputVids, $outputVids, $logs
-$cq = 24                    #CQ value, lower number, higher quality and bigger files.
-$mr = "100M"                #maxrate, 100mbit shouldnt need to change unless its huge resolution, also does bufsize
-$ll = 24                    #loglevel, set 32 if you want normal output. This (24) will only show warnings.
-$ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
-$suffix = "comp"            #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
+# Settings
+$ow = "n"           #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$cq = 24            #CQ value, lower number, higher quality and bigger files.
+$mr = "100M"        #maxrate, 100mbit shouldn't need to change unless its huge resolution, also does bufsize
+$ll = 24            #loglevel, set 32 if you want normal output. This (24) will only show warnings.
+$suffix = "comp"    #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
 #
 ### Stop editing stuff now, unless you are every confident in your changes :)
 #
 
-#Cute banner
-Get-Content .\banner.txt
-write-host "`n"
-
-# tagline, and shilling
-write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor black
 write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
-write-host "`n"
+write-host "`r"
 
-# Testing if ffmpeg in path
-Write-Host "Running ComfyChecker" -ForegroundColor Yellow
-Invoke-Expression .\helpers\ComfyChecker.ps1
-if ($LASTEXITCODE -eq 1) {
-    Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
-    pause
-    exit
-}
-Write-Host "Done checking!" -ForegroundColor Green
-
-Push-Location -path $rootLocation #Dont edit edit this. Edit Above.
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 
 #testing for nvenc
 ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -
@@ -73,18 +36,18 @@ if ( $LASTEXITCODE -eq 1) {
 
 #testing hevc b-frames
 ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
-Write-Host "`n"
+Write-Host "`r"
 if ( $LASTEXITCODE -eq 1) {
     write-host "HEVC B-frames not supported on your chip" -ForegroundColor Red
     $bf = 0
     Write-Host "B-Frames =" $bf
-    write-host "We will continue without them :) some other features also need to be disabled" -ForegroundColor Yellow -BackgroundColor Black
+    write-host "We will continue without them :) Some other features also need to be disabled" -ForegroundColor Yellow -BackgroundColor Black
 } else {
     write-host "HEVC B-frames ARE supported on your chip, yay!" -ForegroundColor Green
     $bf = 2
     Write-Host "B-Frames =" $bf
 }
-#if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. Dont bully me, I dont care enough to re-write this to not be dumb... I know it is.
+#if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. This is stupid, and I'm okay with that.
 if ($bf -ne 0) {
     $taq = 1
     $ref = 4
@@ -98,7 +61,7 @@ if ($bf -ne 0) {
 Write-Host "Temporal AQ = $taq"
 Write-Host "Reference frames = $ref"
 Write-Host "B reference = $bref"
-write-host "`n"
+write-host "`r"
 
 #where you at
 write-host "Working directory: $PWD"
@@ -113,16 +76,16 @@ foreach ($folder in $folders) {
     }
 }
 
-write-host "`n"
+write-host "`r"
 Write-host "Current parameters:"
 Write-host "CQ value chosen: $cq"
 Write-host "Maxrate: $mr"
 Write-host "overwriting output files: $ow"
-write-host "`n"
+write-host "`r"
 
 Write-Output "Hit Enter to start, or ctrl+c / exit the window to stop"
 pause
-write-host "`n"
+write-host "`r"
 
 #grab the items in the input folder
 $videos = Get-ChildItem -Path $inputVids -Recurse
@@ -130,9 +93,9 @@ $videos = Get-ChildItem -Path $inputVids -Recurse
 #loop them all.
 foreach ($video in $videos) {
     $shortName = $video.BaseName #useful for naming.
-    $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an envoirenment variable, cus it needs to be known before we fire.
+    $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an environment variable, cus it needs to be known before we fire.
     Write-host "Start encoding: $video"
-    write-host "`n"
+    write-host "`r"
 
     #multi line drifting
     ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i $inputVids\$video -map 0 -c:v hevc_nvenc -refs $ref `
@@ -143,10 +106,13 @@ foreach ($video in $videos) {
     $time = select-string -Path $logs\$shortName.log -Pattern 'rtime=(.*)' | ForEach-Object{$_.Matches.Groups[1].Value} #ugly parsing to grab time to complete
     Write-host "$time seconds" -ForegroundColor Magenta
     $time | Out-File -FilePath $logs\$shortName-time.txt -Append
-    write-host "`n"
+    write-host "`r"
 
     #remove-item $logs\$shortName.log #remove the full log. #uncomment if you want to clean the logs on completion.
 }
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
-pause #hit em up with a nice pause, so they know its done and didnt crash :)
+Pop-Location #pop location twice to return you to
+Pop-Location #the working dir it was ran from
+pause #hit em up with a nice pause, so they know its done and didn't crash :)
+exit 0

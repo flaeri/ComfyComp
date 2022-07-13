@@ -1,3 +1,3 @@
-Moving config and folders to common function.
-
 Escape / fix ' ffmpeg fail in FFREPORT
+Add check for moved directory. Prompt for location, before re-making folders with old config dir.
+Maybe add a note about overwriting being disabled, and how to enable.

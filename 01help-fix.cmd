@@ -1,0 +1,2 @@
+REM If you've never ran this suite before, or you've just updated, and a script dosent work, this will help you setup and configure powershell, as well as unblock the files in this folder.
+call Powershell -executionPolicy ByPass helpers\unblocker.ps1
