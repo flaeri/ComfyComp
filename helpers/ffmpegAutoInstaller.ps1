@@ -12,7 +12,7 @@ if (Test-Path "$ffmpegPath\ffmpeg.exe") {
     Write-Host "We're downloading. Please be patient :)"
     Invoke-WebRequest -Uri https://otterbro.com/ffmpeg.zip -outfile "ffmpeg.zip"
     $ProgressPreference = 'Continue'
-    New-Item -path "$ffmpegPath" -ErrorAction SilentlyContinue
+    New-Item -path "$ffmpegPath" -ItemType "directory" -ErrorAction SilentlyContinue
     Expand-Archive -path "ffmpeg.zip" $ffmpegPath
     Remove-Item "ffmpeg.zip"
     Write-Host "adding ffmpeg to path" -ForegroundColor Green
