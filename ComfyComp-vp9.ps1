@@ -38,25 +38,32 @@ $inputCodec = ffprobe -v error -select_streams v:0 -show_entries stream=codec_na
 
 write-host "Processing, please be patient" -ForegroundColor Yellow
 
+$startTime = get-date
+
 if ($inputCodec -eq "vp9") {
     write-host "vp9, ensuring correct decoder" -ForegroundColor Yellow
     ffmpeg -$ow -loglevel $ll -c:v libvpx-vp9 -i "$inputStinger" `
-    -c:v libvpx-vp9 -crf 31 -b:v 0 -cpu-used 5 `
+    -c:v libvpx-vp9 -crf 31 -b:v 0 -b:a 192k -cpu-used 5 `
     -pix_fmt yuva420p $outputVids\$shortName-$suffix.webm
 } elseif ($inputCodec -eq "vp8") {
     write-host "vp8, ensuring correct decoder" -ForegroundColor Yellow
     ffmpeg -$ow -loglevel $ll -c:v libvpx -i "$inputStinger" `
-    -c:v libvpx-vp9 -crf 31 -b:v 0 -cpu-used 5 `
+    -c:v libvpx-vp9 -crf 31 -b:v 0 -b:a 192k -cpu-used 5 `
     -pix_fmt yuva420p $outputVids\$shortName-$suffix.webm
 } else {
     Write-Host "not a webm, trying auto" -ForegroundColor Yellow
     ffmpeg -$ow -loglevel $ll -i "$inputStinger" `
-    -c:v libvpx-vp9 -crf 31 -b:v 0 -cpu-used 5 `
+    -c:v libvpx-vp9 -crf 31 -b:v 0 -b:a 192k -cpu-used 5 `
     -pix_fmt yuva420p $outputVids\$shortName-$suffix.webm
 }
 
-#CountEm
-Write-Host "done! Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Green
+$endTime = get-date
+$time = new-timespan -start $startTime -End $endTime
+
+write-host "`r"
+Write-host "Done! Completed in: $time" -ForegroundColor Magenta
+Write-Host "Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Green
+
 Pop-Location #pop location twice to return you to
 Pop-Location #the working dir it was ran from
 pause #hit em up with a nice pause, so they know its done and didn't crash :)
