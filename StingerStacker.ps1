@@ -56,5 +56,8 @@ if ($inputCodec -eq "vp9") {
 
 write-host "`r"
 Write-Host "done! Please test $outputVids\$shortName-stacked.webm" -ForegroundColor Green
+
+Pop-Location #pop location twice to return you to
+Pop-Location #the working dir it was ran from
 pause
 exit 0

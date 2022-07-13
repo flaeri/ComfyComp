@@ -57,6 +57,7 @@ foreach ($video in $videos) {
 
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
-Pop-Location #return to original location
+Pop-Location #pop location twice to return you to
+Pop-Location #the working dir it was ran from
 pause #hit em up with a nice pause, so they know its done and didn't crash :)
 exit 0

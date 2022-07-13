@@ -54,7 +54,10 @@ if ($inputCodec -eq "vp9") {
     -c:v libvpx-vp9 -crf 31 -b:v 0 -cpu-used 5 `
     -pix_fmt yuva420p $outputVids\$shortName-$suffix.webm
 }
+
 #CountEm
 Write-Host "done! Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Green
+Pop-Location #pop location twice to return you to
+Pop-Location #the working dir it was ran from
 pause #hit em up with a nice pause, so they know its done and didn't crash :)
 exit 0

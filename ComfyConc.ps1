@@ -52,5 +52,7 @@ write-host "`r"
 Write-Host "Done! Cleaning up temp file. Hit a key to exit" -ForegroundColor Yellow
 Remove-Item videos.txt
 
+Pop-Location #pop location twice to return you to
+Pop-Location #the working dir it was ran from
 pause
 exit 0
