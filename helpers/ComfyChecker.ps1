@@ -9,7 +9,7 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
     if ($null -eq $ffPath) {
         Write-Host "Did NOT find ffmpeg in path" -ForegroundColor Yellow
         if (Test-Path -Path "$FlaeriFfmpegPath\ffmpeg.exe") {
-            Write-Host "Found ffmpeg in $FlaeriFfmpegPath, adding to path" -ForegroundColor Green
+            Write-Host "Found ffmpeg in $FlaeriFfmpegPath, adding to temp path" -ForegroundColor Green
             $ENV:PATH="$ENV:PATH;$FlaeriFfmpegPath"
         } else {
             Write-Host "ffmpeg was not found in your path, and you've never ran the auto-install script" -ForegroundColor Red
@@ -19,10 +19,10 @@ $ffPath = get-command ffmpeg -erroraction 'silentlycontinue'
                 Invoke-Expression .\helpers\ffmpegAutoInstaller.ps1 #this fires the powershell script to download ffmpeg.
                 exit
             } else {
-                write-host "`r"
+                write-host "`n"
                 write-Host "You chose not to auto download. You need to download ffmpeg: https://www.gyan.dev/ffmpeg/builds/" -ForegroundColor red
                 write-host "After you've downloaded, you need to extract the contents, and add the folder containing ffmpeg.exe to your environment/path" -ForegroundColor red
-                write-host "`r"
+                write-host "`n"
                 write-host "The script will now exit. Please run it again if you change your mind, or you've installed ffmpeg correctly " -ForegroundColor yellow
             pause
             exit 1
