@@ -21,11 +21,9 @@ $suffix = "comp"    #name that is used as a suffix for files in the output folde
 write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily adjustable." -ForegroundColor Magenta -BackgroundColor black
 write-host "`r"
 
-Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
-
 #testing for nvenc
-ffmpeg -hide_banner -loglevel $ll -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -
-if ( $LASTEXITCODE -eq 1) {
+ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 1 -f null -
+if (!$?) {
     write-host "Nvenc HEVC is NOT supported on this card, sorry!" -ForegroundColor Red
     write-host "The script will now exit" -ForegroundColor Yellow -BackgroundColor Black
     Pause
@@ -36,8 +34,7 @@ if ( $LASTEXITCODE -eq 1) {
 
 #testing hevc b-frames
 ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -bf 2 -t 1 -f null -
-Write-Host "`r"
-if ( $LASTEXITCODE -eq 1) {
+if (!$?) {
     write-host "HEVC B-frames not supported on your chip" -ForegroundColor Red
     $bf = 0
     Write-Host "B-Frames =" $bf
@@ -47,6 +44,7 @@ if ( $LASTEXITCODE -eq 1) {
     $bf = 2
     Write-Host "B-Frames =" $bf
 }
+pause
 #if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. This is stupid, and I'm okay with that.
 if ($bf -ne 0) {
     $taq = 1
@@ -64,6 +62,7 @@ Write-Host "B reference = $bref"
 write-host "`r"
 
 #where you at
+Push-Location -path $rootLocation #Dont edit edit this, edit the config.json or delete it
 write-host "Working directory: $PWD"
 #testing folders
 foreach ($folder in $folders) {
@@ -92,23 +91,24 @@ $videos = Get-ChildItem -Path $inputVids -Recurse
 
 #loop them all.
 foreach ($video in $videos) {
+    $videoFN = $video.FullName
     $shortName = $video.BaseName #useful for naming.
-    $env:FFREPORT = "file=$logs\\$shortName.log:level=32" #ffmpeg is hardcoded to look for an environment variable, cus it needs to be known before we fire.
-    Write-host "Start encoding: $video"
+    $name = $video.Name #useful for naming
+    
     write-host "`r"
+    Write-host "--- Start ---"
+    Write-host "Start processing: $name"
+    $startTime = get-date
 
     #multi line drifting
-    ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i $inputVids\$video -map 0 -c:v hevc_nvenc -refs $ref `
+    ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i "$videoFN" -map 0 -c:v hevc_nvenc -refs $ref `
     -preset p7 -rc vbr -cq $cq -bf $bf -maxrate $mr -bufsize $mr -spatial-aq 1 -temporal-aq $taq -aq-strength 7 `
     -b_ref_mode $bref -c:a copy $outputVids\$shortName-$suffix.mp4
 
-    Write-host "Encoding $video completed in:"
-    $time = select-string -Path $logs\$shortName.log -Pattern 'rtime=(.*)' | ForEach-Object{$_.Matches.Groups[1].Value} #ugly parsing to grab time to complete
-    Write-host "$time seconds" -ForegroundColor Magenta
-    $time | Out-File -FilePath $logs\$shortName-time.txt -Append
-    write-host "`r"
-
-    #remove-item $logs\$shortName.log #remove the full log. #uncomment if you want to clean the logs on completion.
+    $endTime = get-date
+    $time = new-timespan -start $startTime -End $endTime
+    Write-host "$video completed in: $time" -ForegroundColor Magenta
+    Write-host "--- End ---"
 }
 #CountEm
 Write-Host "Done! Files attempted:" $videos.Count
