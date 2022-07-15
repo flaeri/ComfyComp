@@ -1,10 +1,4 @@
-#Cute banner
-Get-Content .\banner.txt
-write-host "`r"
-
-# tagline, and shilling
-write-host "https://blog.otterbro.com" -ForegroundColor Magenta -BackgroundColor black
-write-host "`r"
+. .\helpers\banner.ps1
 
 # Try reading config
 $configPath = ".\config.json"
@@ -41,16 +35,7 @@ $outputVids = "02 Output"   # Feel free to name them whatever you want, but they
 $logs = "03 Logs"           #
 $folders = $rootLocation, $inputVids, $outputVids, $logs
 
-# Testing if ffmpeg in path
-Write-Host "Running ComfyChecker:" -ForegroundColor Yellow
-Invoke-Expression .\helpers\ComfyChecker.ps1
-if ($LASTEXITCODE -eq 1) {
-    Write-Host "ComfyChecker failed, aborted, or was exited" -ForegroundColor Red
-    pause
-    exit
-} else {
-    write-host "OK!" -ForegroundColor Green
-}
+. .\helpers\ffmpegInfo.ps1
 
 Push-Location -Path $rootLocation
 #where you at
