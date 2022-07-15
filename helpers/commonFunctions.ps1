@@ -45,3 +45,18 @@ Function Read-Config
     )
     Get-Content $Path -raw | ConvertFrom-Json
 }
+
+Function Start-Timer($name)
+{
+    write-host "`r"
+    Write-host "Start processing: $name" -ForegroundColor Yellow
+    Set-Variable -name startTime -Value (get-date) -Scope script
+}
+
+Function Stop-Timer($name, $startTime)
+{
+    $endTime = get-date
+    $time = new-timespan -start $startTime -End $endTime
+    #$time = $time.ToString("hh' h 'mm' min 'ss' sec'")
+    Write-host "$name completed in: $time" -ForegroundColor Magenta
+}
