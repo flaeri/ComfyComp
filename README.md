@@ -13,6 +13,11 @@
 
 	a. In order to test most of them, you need to place some files in the `01 Input` folder
 
+BONUS: Cutesy PS one-liner: 
+```
+iwr https://github.com/flaeri/ComfyComp/archive/refs/heads/experimental.zip -OutFile "cc.zip"; expand-archive -path "cc.zip"; explorer "cc\ComfyComp-experimental"
+```
+
 <br>
 
 You'll be prompted for a location where you would like the media files to be stored, so that they can be seperate from where the scripts are. This is only for the first run, and will be stored.
