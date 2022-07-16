@@ -28,7 +28,7 @@ Pause
 $inputStinger = Get-FileName
 if ($inputStinger -eq "") {
     Write-Host "you didn't select anything, exiting" -ForegroundColor Red
-    Pause
+    psPause
     exit
 }
 
@@ -66,5 +66,5 @@ Write-Host "Please test $outputVids\$shortName-$suffix.webm" -ForegroundColor Gr
 
 Pop-Location #pop location twice to return you to
 Pop-Location #the working dir it was ran from
-pause #hit em up with a nice pause, so they know its done and didn't crash :)
+psPause
 exit 0

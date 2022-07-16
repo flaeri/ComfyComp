@@ -26,7 +26,7 @@ ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:
 if (!$?) {
     write-host "Nvenc HEVC is NOT supported on this card, sorry!" -ForegroundColor Red
     write-host "The script will now exit" -ForegroundColor Yellow -BackgroundColor Black
-    Pause
+    psPause
     exit
 } else {
     write-host "Nvenc HEVC supported!" -ForegroundColor Green
@@ -44,7 +44,6 @@ if (!$?) {
     $bf = 2
     Write-Host "B-Frames =" $bf
 }
-pause
 #if b-frame fail, we assume its 10 series or below, and we need to disable more stuff. This is stupid, and I'm okay with that.
 if ($bf -ne 0) {
     $taq = 1
@@ -82,37 +81,65 @@ Write-host "Maxrate: $mr"
 Write-host "overwriting output files: $ow"
 write-host "`r"
 
-Write-Output "Hit Enter to start, or ctrl+c / exit the window to stop"
-pause
-write-host "`r"
-
 #grab the items in the input folder
 $videos = Get-ChildItem -Path $inputVids -Recurse
 
+write-host "`n Number of videos:" $videos.count -ForegroundColor Yellow
+write-host "Ready to go? If not, exit or hit ctrl+c"
+Pause
+write-host "`r"
+
+#counters
+$fail = 0
+$ok = 0
+$skip = 0
+
+#totalTime
+$totalStart = get-date
+
 #loop them all.
 foreach ($video in $videos) {
-    $videoFN = $video.FullName
-    $shortName = $video.BaseName #useful for naming.
-    $name = $video.Name #useful for naming
-    
-    write-host "`r"
-    Write-host "--- Start ---"
-    Write-host "Start processing: $name"
-    $startTime = get-date
 
-    #multi line drifting
-    ffmpeg -$ow -benchmark -loglevel $ll -hwaccel auto -i "$videoFN" -map 0 -c:v hevc_nvenc -refs $ref `
-    -preset p7 -rc vbr -cq $cq -bf $bf -maxrate $mr -bufsize $mr -spatial-aq 1 -temporal-aq $taq -aq-strength 7 `
-    -b_ref_mode $bref -c:a copy $outputVids\$shortName-$suffix.mp4
+    Set-FileVars($video) #full=wPath, base=noExt,
+    $fullOut = "$outputVids\$baseName-$suffix.mp4" #maybe change this
+    $skipVid = $False
 
-    $endTime = get-date
-    $time = new-timespan -start $startTime -End $endTime
-    Write-host "$video completed in: $time" -ForegroundColor Magenta
-    Write-host "--- End ---"
+    if ((test-path $fullOut) -And ($ow -eq "n")) {
+        $skip++
+        $skipVid = $True
+        write-host "$name already exists, skipping" -ForegroundColor Yellow
+        write-host "`r"
+    }
+
+    if (!($skipVid)) {
+        Start-Timer $name
+
+        #multi line drifting
+        ffmpeg -$ow -loglevel $ll -hwaccel auto -i $fullName -map 0 -c:v hevc_nvenc -refs $ref `
+        -preset p7 -rc vbr -cq $cq -bf $bf -maxrate $mr -bufsize $mr -spatial-aq 1 -temporal-aq $taq -aq-strength 7 `
+        -b_ref_mode $bref -c:a copy $outputVids\$baseName-$suffix.mp4 #change output
+
+        if (!$?) {
+            $fail++
+        } else {
+            $ok++
+        }
+        Stop-Timer $name $startTime
+    }
 }
-#CountEm
-Write-Host "Done! Files attempted:" $videos.Count
-Pop-Location #pop location twice to return you to
-Pop-Location #the working dir it was ran from
-pause #hit em up with a nice pause, so they know its done and didn't crash :)
-exit 0
+
+$fg = "green"
+if ($skip -gt 0) {
+    set-variable -name fg -value "yellow"
+}
+if ($fail -gt 0) {
+    set-variable -name fg -value "red"
+}
+
+$totalTime = new-timespan -start $totalStart -End (get-date)
+
+write-host "`n ---- Summary ----"
+write-host "Total completion time: $totalTime" -foregroundcolor Magenta
+Write-Host "Success: $ok | Skip: $skip | Fail: $fail" -ForegroundColor $fg
+Pop-Location #pop location back to the dir script was ran from
+psPause

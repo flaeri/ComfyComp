@@ -12,9 +12,9 @@ $qProceed = "Please confirm the files chosen. Yes to proceed, No to quit"
 $yesNo = "&Yes", "&No"
 
 # Settings
-$ll = 24                    #loglevel, set 32 if you want normal output. This (24) will only show warnings.
-$ow = "n"                   #overwrite files in output dir. Switch to "y" (yes), if you would like.
-$suffix = "conc"            #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
+$ll = 24            #loglevel, set 32 if you want normal output. This (24) will only show warnings.
+$ow = "n"           #overwrite files in output dir. Switch to "y" (yes), if you would like.
+$suffix = "conc"    #name that is used as a suffix for files in the output folder. Easier to tell them apart, and lower risk of overwriting.
 
 #
 ### Stop editing stuff now, unless you are every confident in your changes :)
@@ -54,5 +54,5 @@ Remove-Item videos.txt
 
 Pop-Location #pop location twice to return you to
 Pop-Location #the working dir it was ran from
-pause
+psPause
 exit 0
