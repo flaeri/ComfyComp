@@ -57,6 +57,18 @@ Function Stop-Timer($name, $startTime)
 {
     $endTime = get-date
     $time = new-timespan -start $startTime -End $endTime
-    #$time = $time.ToString("hh' h 'mm' min 'ss' sec'")
     Write-host "$name completed in: $time" -ForegroundColor Magenta
+}
+
+Function Set-FileVars($video)
+{
+    Set-Variable -name fullName -Value $video.FullName -Scope script
+    Set-Variable -name baseName -Value $video.BaseName -Scope script
+    Set-Variable -name name -Value $video.Name -Scope script
+    Set-Variable -name ext -Value $video.Extension -Scope script #.ext
+}
+
+Function psPause()
+{
+    [void][System.Console]::ReadKey($FALSE)
 }
