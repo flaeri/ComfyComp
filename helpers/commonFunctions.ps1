@@ -62,9 +62,9 @@ Function Stop-Timer($name, $startTime)
 
 Function Set-FileVars($video)
 {
-    Set-Variable -name fullName -Value $video.FullName -Scope script
-    Set-Variable -name baseName -Value $video.BaseName -Scope script
-    Set-Variable -name name -Value $video.Name -Scope script
+    Set-Variable -name fullName -Value $video.FullName -Scope script #fullpath
+    Set-Variable -name baseName -Value $video.BaseName -Scope script #noExt
+    Set-Variable -name name -Value $video.Name -Scope script #name w ext
     Set-Variable -name ext -Value $video.Extension -Scope script #.ext
 }
 
