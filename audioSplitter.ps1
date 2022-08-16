@@ -28,6 +28,12 @@ write-host "`r"
 #grab the items in the input folder
 $videos = Get-ChildItem -Path $inputVids -Recurse
 
+if ($videos.count -eq 0) {
+    write-host "There are no files in the input folder. Exiting!" -ForegroundColor Red
+    psPause
+    exit
+}
+
 write-host "`n Number of videos:" $videos.count -ForegroundColor Yellow
 Write-host "overwriting output files: $ow"
 write-host "Ready to go? If not, exit or hit ctrl+c"
