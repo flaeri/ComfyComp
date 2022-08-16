@@ -1,5 +1,5 @@
 # User configurable
-$maxSize = 100 #Megabytes, usually limit is 50 or 100 depending on the server/nitro
+$maxSize = 50 #Megabytes, usually limit is 50 or 100 depending on the server/nitro
 $audioBr = 128 #Kilobytes, audio bitrate
 $suffix = "disc" #output is tagged with this, like "myVideo-disc.webm"
 
@@ -27,10 +27,13 @@ Set-FileVars($video) #full=wPath, base=noExt,
 
 # calc
 
+# 5% overhead safety 
+$safeSize = $maxSize * 0.95
+
 ## get duration of file
 $durationSec = ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
 
-$vidBr = $maxsize * 8 / $durationSec * 1000 # size in MB * 8 = bits, divided by duration. x 1000 for kbps
+$vidBr = $safeSize * 8 / $durationSec * 1000 # size in MB * 8 = bits, divided by duration. x 1000 for kbps
 $vidBr = [math]::Round($vidBr) # int plz
 $vidBr = $vidBr - $audioBr # account for audio bitrate
 
@@ -43,11 +46,21 @@ pause
 #timer
 Start-Timer "$name"
 
+# ffmpeg encode
 ffmpeg -hide_banner -loglevel 32 -i $video -c:v libvpx-vp9 -deadline realtime -cpu-used 6 -row-mt 1 -crf 26 `
--b:v $vidBr`k -b:a $audioBr`k -pix_fmt yuv420p $baseName-$suffix`.webm
+-b:v $vidBr`k -b:a $audioBr`k -pix_fmt yuv420p $dir\$baseName-$suffix`.webm
 
 write-host "`n"
 Stop-Timer $name $startTime
+
+$outputFile = get-childitem -Path "$dir\$baseName-$suffix`.webm"
+$outputFileSize = [math]::Round($outputFile.Length / 1MB)
+if ($outputFileSize -gt $maxSize) {
+    write-host "Fail! File is larger ($outputFileSize MB) than $maxSize MB" -ForegroundColor Red
+} else {
+    write-host "OK! Filesize is $outPutFileSize MB" -ForegroundColor Green
+}
+
 
 Pop-Location #pop location back to the dir script was ran from
 write-host "`Done, hit any key to open the folder containing the file"
