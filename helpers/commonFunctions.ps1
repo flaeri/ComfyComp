@@ -66,6 +66,7 @@ Function Set-FileVars($video)
     Set-Variable -name baseName -Value $video.BaseName -Scope script #noExt
     Set-Variable -name name -Value $video.Name -Scope script #name w ext
     Set-Variable -name ext -Value $video.Extension -Scope script #.ext
+    Set-Variable -name dir -Value $video.Directory -Scope script # path to folder
 }
 
 Function psPause()
