@@ -30,6 +30,7 @@ $videos = Get-ChildItem -Path $inputVids -Recurse
 
 if ($videos.count -eq 0) {
     write-host "There are no files in the input folder. Exiting!" -ForegroundColor Red
+    write-host "Input folder: $rootLocation\$inputVids" -ForegroundColor Yellow
     psPause
     exit
 }
