@@ -5,8 +5,11 @@ $maxSize = 50  #Megabytes, usually limit is 8, 50 or 100 depending on the server
 $audioBr = 128  #Kilobytes, audio bitrate
 
 # Speed and Quality
-$cpuUsed = 3        # VP9
-$x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast) 
+$cpuUsed = 3        # VP9 speed vs quality
+$vp9Crf = 32        # VP9
+$x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast)
+$x264crf = 22       # x264
+$nvencCq = 26       # Nvenc H264
 
 # Misc
 $suffix = "disc"    #output is tagged with this, like "myVideo-disc.webm/mp4"
@@ -75,7 +78,7 @@ $vidBr = [math]::Round($vidBr) # int plz
 $vidBr = $vidBr - $audioBr # account for audio bitrate
 $bufSize = $vidBr*2 #bufsize x2 increases quality, lowers accuracy
 
-# bitrate guard
+# bitrate guard, if video bitrate less  than 200 kbps, give up
 if ($vidBr -le 200) {
     write-host "`nBitrate is too low ($vidBr kbps)! Either increase the filesize or shorten the duration" -ForegroundColor Red
     write-host "`Exiting!" -ForegroundColor Red
@@ -88,11 +91,18 @@ if ($enc -eq 2) {$bpw = $bpw * 2} # if vp9, 2x bpw
 
 # used to be 5.5
 if ($bpw -lt 5.6) {
-    if ($vidHeight -ge 1440) {$downscale = 1080}
+    if ($vidHeight -ge 1440) {
+        $downscale = 1080
+        $x264crf = $x264crf-2
+        $nvencCq = $nvencCq-2
+    }
     $bpw = $vidBr/$downscale
     write-host "`nNot enough bit rate for $vidHeight`p, downscaling..." -ForegroundColor Yellow
     if ($bpw -lt 5.5) {
         $downscale = 720
+        $x264crf = $x264crf-2
+        $vp9Crf = $vp9Crf+2
+        $nvencCq = $nvencCq-2
         write-host "Go to 720p" -ForegroundColor Yellow
     }
 }
@@ -111,13 +121,13 @@ switch ( $enc )
 {
     # h264 nvenc
     0 {ffmpeg -hide_banner -loglevel $ll -hwaccel cuda -i $video -c:v h264_nvenc -preset p6 -rc vbr `
-        -cq 24 -bf 2 -maxrate $vidBr`k -bufsize $bufSize`k -spatial-aq 1 -temporal-aq 1 -aq-strength 7 `
+        -cq $nvencCq -bf 2 -maxrate $vidBr`k -bufsize $bufSize`k -spatial-aq 1 -temporal-aq 1 -aq-strength 7 `
         -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale -movflags +faststart $dir\$baseName-$suffix.$ext}
     # libx264
-    1 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libx264 -preset $x264p -crf 20 -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k `
+    1 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libx264 -preset $x264p -crf $x264crf -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k `
         -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale -movflags +faststart $dir\$baseName-$suffix.$ext}
     # vp9
-    2 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf 24 `
+    2 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf `
         -b:v $vidBr`k -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale $dir\$baseName-$suffix.$ext}
 }
 

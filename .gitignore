@@ -6,3 +6,4 @@ testAppConfig.ps1
 config.xml
 releases/*
 notMaintained/*
+personal
