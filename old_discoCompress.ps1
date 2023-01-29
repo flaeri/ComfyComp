@@ -5,18 +5,15 @@ $maxSize = 50  #Megabytes, usually limit is 8, 50 or 100 depending on the server
 $audioBr = 128  #Kilobytes, audio bitrate
 
 # Speed and Quality
-# VP9 (slow)
 $cpuUsed = 3        # VP9 speed vs quality
 $vp9Crf = 32        # VP9
-# x264 (fast)
 $x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast)
 $x264crf = 22       # x264
-# nvenc
 $nvencCq = 26       # Nvenc H264
 
 # Misc
 $suffix = "disc"    #output is tagged with this, like "myVideo-disc.webm/mp4"
-$ll = 32            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
+$ll = 32            #how much ffmpeg outputs to the console. 24 for quiet
 
 ### STOP TOUCHY NOW ###
 
@@ -34,11 +31,12 @@ write-host "`r"
 #static
 $question = "Fast (h264, lower quality), Slow (vp9, higher quality)"
 $option = "&Fast", "&Slow"
+$downscale = -2 #default placeholder in case of no scaling
 
 #pick encode, 0 = fast, 1 = slow
 $choice = $Host.UI.PromptForChoice("Slow or Fast?", $question, $Option, 1)
 
-#get file
+#get
 $video = read-host -Prompt "`nPlease drag&drop a video, then hit Enter" #drag video in
 $video = get-childitem -path ($video -replace '"', "") #input is dumbass string, fix it
 Clear-Host
@@ -46,7 +44,7 @@ Clear-Host
 # naming stuff
 Set-FileVars($video) #full=wPath, base=noExt,
 
-# enc: 0=nvenc, 1=x264, 2=vp9
+# enc: 0=nvenc, 1=x264, 3=vp9
 if ($choice -eq 0) {
     write-host "Testing nvenc..." -ForegroundColor Yellow
     ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_nvenc -t 0.1 -f null -
@@ -54,7 +52,7 @@ if ($choice -eq 0) {
         write-host "Nvenc OK!" -ForegroundColor green
         $enc = 0 #nvenc
     } else {
-        write-host "No hw accel encode device found, x264 (CPU) it is!" -ForegroundColor Yellow
+        write-host "No nvenc device found, x264 it is!" -ForegroundColor Yellow
         $enc = 1 #x264
     }
     $ext = "mp4"
@@ -67,21 +65,12 @@ if ($choice -eq 0) {
 # 10% overhead safety 
 $safeSize = $maxSize * 0.90
 
-## Probe input file
-$probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=color_space:stream=color_range -of default=noprint_wrappers=1 "$video"
-# get duration of file
-$durationSec = ($probeData | Select-String "duration=").Line.Split('=')[1].Trim()
+## get duration of file
+$durationSec = ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
 $durationSecClamp = [math]::Round($durationSec)
+
 #get width
-$vidHeight = ($probeData | Select-String "height=").Line.Split('=')[1].Trim()
-#get input color range. Not currently used
-$inRange = ($probeData | Select-String "color_range=").Line.Split('=')[1].Trim()
-#get HDR
-$colorSpace = ($probeData | Select-String "color_space=").Line.Split('=')[1].Trim()
-if ($colorSpace -like "bt2020*" ) {
-    write-host "`n HDR file detected, Color Space: $colorSpace" -ForegroundColor Yellow
-    $hdr = $true
-}
+$vidHeight = ffprobe -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 "$video"
 
 # convert size
 $vidBr = $safeSize * 8 / $durationSec * 1000 # size in MB * 8 = bits, divided by duration. x 1000 for kbps
@@ -103,14 +92,14 @@ if ($enc -eq 2) {$bpw = $bpw * 2} # if vp9, 2x bpw
 # used to be 5.5
 if ($bpw -lt 5.6) {
     if ($vidHeight -ge 1440) {
-        $downscaleRes = 1080
+        $downscale = 1080
         $x264crf = $x264crf-2
         $nvencCq = $nvencCq-2
     }
-    $bpw = $vidBr/1080
+    $bpw = $vidBr/$downscale
     write-host "`nNot enough bit rate for $vidHeight`p, downscaling..." -ForegroundColor Yellow
-    if ($bpw -lt 5.6) {
-        $downscaleRes = 720
+    if ($bpw -lt 5.5) {
+        $downscale = 720
         $x264crf = $x264crf-2
         $vp9Crf = $vp9Crf+2
         $nvencCq = $nvencCq-2
@@ -125,59 +114,22 @@ Write-host "Max Size: $maxSize mb" -ForegroundColor Yellow
 write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
 pause
 
+#timer
+Start-Timer "$name"
 
-
-## Build ffmpeg command
-# Input
-$preInput = "-hide_banner -loglevel $ll"
-$inFile = "-i '$video'"
-
-# scale / HDR
-#$src_range = "-src_range 0"
-$pix = "-pix_fmt yuv420p"
-$scale = "" #"-vf zscale=r=limited:m=bt709,format=yuv420p"
-if ($hdr) {
-    $scale = "-vf zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709,format=yuv420p -map_metadata -1"
-    if ($downscaleRes) {
-        $scale = "-vf zscale=transfer=linear:w=-2:h=$downscaleRes,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709,format=yuv420p -map_metadata -1"
-    }
-} elseif ($downscaleRes) {
-    $scale = "-vf scale=-2:$downscaleRes"
-}
-
-# Flags
-$flags = "-movflags +faststart"
-
-# Output
-$outFile = "'$dir\$baseName-$suffix.$ext'"
-
-#codec selector
 switch ( $enc )
 {
     # h264 nvenc
-    0 {
-        $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
-        $ca = "-c:a aac -b:a $audioBr`k"
-        $command = "ffmpeg $preInput $inFile $cv $ca $pix $scale $flags $outFile"
-    }
+    0 {ffmpeg -hide_banner -loglevel $ll -hwaccel cuda -i $video -c:v h264_nvenc -preset p6 -rc vbr `
+        -cq $nvencCq -bf 2 -maxrate $vidBr`k -bufsize $bufSize`k -spatial-aq 1 -temporal-aq 1 -aq-strength 7 `
+        -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale -movflags +faststart $dir\$baseName-$suffix.$ext}
     # libx264
-    1 {
-        $cv = "-c:v libx264 -preset $x264p -crf $x264crf -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k"
-        $ca = "-c:a aac -b:a $audioBr`k"
-        $command = "ffmpeg $preInput $inFile $cv $ca $pix $scale $flags $outFile"
-    }
+    1 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libx264 -preset $x264p -crf $x264crf -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k `
+        -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale -movflags +faststart $dir\$baseName-$suffix.$ext}
     # vp9
-    2 {
-        $cv = "-c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf -b:v $vidBr`k"
-        $ca = "-c:a libopus -b:a $audioBr`k"
-        $command = "ffmpeg $preInput $inFile $cv $ca $pix $scale $outFile"
-    }
+    2 {ffmpeg -hide_banner -loglevel $ll -i $video -c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf `
+        -b:v $vidBr`k -b:a $audioBr`k -pix_fmt yuv420p -vf scale=-2:$downscale $dir\$baseName-$suffix.$ext}
 }
-
-#timer
-Start-Timer "$name"
-# Actual run
-Invoke-Expression $command
 
 write-host "`n"
 Stop-Timer $name $startTime
@@ -189,6 +141,7 @@ if ($outputFileSize -gt $maxSize) {
 } else {
     write-host "OK! Filesize is $outPutFileSize MB" -ForegroundColor Green
 }
+
 
 Pop-Location #pop location back to the dir script was ran from
 write-host "`Done, hit any key to open the folder containing the file"
