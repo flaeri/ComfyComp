@@ -38,6 +38,12 @@ $option = "&Fast", "&Slow"
 #pick encode, 0 = fast, 1 = slow
 $choice = $Host.UI.PromptForChoice("Slow or Fast?", $question, $Option, 1)
 
+#get filesize
+$inputSize = Read-Host "`nChoose a file size (in MegaBytes). Hit Enter for default [$($maxSize)] MB"
+$parsedInput = [int]([regex]::Match($inputSize, "^(\d+)").Groups[1].Value) #regex grab first group of digits. Gets rid of kb/mb or ,. or space
+$fileSize = if ($parsedInput -eq 0) { $maxSize } else { $parsedInput }
+$maxSize = $fileSize
+
 #get file
 $video = read-host -Prompt "`nPlease drag&drop a video, then hit Enter" #drag video in
 $video = get-childitem -path ($video -replace '"', "") #input is dumbass string, fix it
