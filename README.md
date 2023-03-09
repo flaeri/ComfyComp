@@ -46,6 +46,11 @@ It will attempt take *any* files in the input folder, and output HEVC compressed
 This will *only* work for people with nvidia cards that support HEVC.
 That means minimum 3rd gen (Maxwell GM20x, somewhat limited). 4th gen (pascal) would be preferred.
 
+### discoCompress
+Quickly create (1pass, VBV constrained crf/cq) videos that will embed on discord, and adhere to the size selected. Capable of VP9 or h264 (nvenc, x264 if not avaliable).
+
+Able to handle HDR files, and will automatically reduce the resolution if it is deemed to large for the target bitrate.
+
 ### audioSplitter
 
 Takes all the files in the input folder, and separates out a single file per audio track. Sometimes useful for video editors without multi track audio support.'
@@ -54,7 +59,7 @@ Takes all the files in the input folder, and separates out a single file per aud
 
 Will *attempt* to horizontally stack two files, with alpha channel intact. Useful for track matte stingers in [OBS Studio](https://github.com/obsproject/obs-studio)
 
-### ComfyComp-vp9
+### StingerFixer
 
 Tries to encode files with alpha into vp9 coded webm files. Useful for existing vp9 encodes that are wonky, or if you want to convert your files to vp9 webm with alpha channel.
 
