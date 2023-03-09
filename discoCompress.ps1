@@ -65,9 +65,16 @@ if ($choice -eq 0) {
     }
     $ext = "mp4"
 } else {
-    write-host "vp9 time :)"
-    $enc = 2 #vp9
-    $ext = "webm"
+    ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v libvpx-vp9 -t 0.1 -f null -
+    if ($?) {
+        write-host "VP9 OK!" -ForegroundColor green
+        $enc = 2 #nvenc
+        $ext = "webm"
+    } else {
+        write-host "No VP9 encoder found, falling back to x264" -ForegroundColor Yellow
+        $enc = 1 #x264
+        $ext = "mp4"
+    }
 }
 
 # 10% overhead safety 
