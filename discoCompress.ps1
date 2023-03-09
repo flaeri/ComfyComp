@@ -185,10 +185,18 @@ Start-Timer "$name"
 # Actual run
 Invoke-Expression $command
 
+# check both for output file existing and null size
+$outputFile = get-childitem -Path "$dir\$baseName-$suffix.$ext" -ErrorAction SilentlyContinue
+if (!($outputFile.Length -gt 0)) {
+    write-host "FFmpeg failed!" -ForegroundColor Red
+    write-host "Please check error messages above"
+    psPause
+    exit
+}
+
 write-host "`n"
 Stop-Timer $name $startTime
 
-$outputFile = get-childitem -Path "$dir\$baseName-$suffix.$ext"
 $outputFileSize = [math]::Round($outputFile.Length / 1MB, 2)
 if ($outputFileSize -gt $maxSize) {
     write-host "Fail! File is larger ($outputFileSize MB) than $maxSize MB" -ForegroundColor Red
