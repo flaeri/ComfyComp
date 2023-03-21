@@ -22,7 +22,7 @@ write-host "HEVC nvenc, VBR-CQ, adapts to nvenc hardware capabilities. Easily ad
 write-host "`r"
 
 #testing for nvenc
-ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v hevc_nvenc -t 0.1 -f null -
+ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -b_ref_mode 0 -c:v hevc_nvenc -t 0.1 -f null -
 if (!$?) {
     write-host "Nvenc HEVC is NOT supported on this card, sorry!" -ForegroundColor Red
     write-host "The script will now exit" -ForegroundColor Yellow -BackgroundColor Black
