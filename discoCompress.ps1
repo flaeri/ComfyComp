@@ -7,16 +7,17 @@ $audioBr = 128  #Kilobytes, audio bitrate
 # Speed and Quality
 # VP9 (slow)
 $cpuUsed = 3        # VP9 speed vs quality
-$vp9Crf = 32        # VP9
+$vp9Crf = 32        # VP9 crf target
 # x264 (fast)
 $x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast)
-$x264crf = 22       # x264
+$x264crf = 22       # x264 crf target
 # nvenc
-$nvencCq = 26       # Nvenc H264
+$nvencCq = 26       # Nvenc H264 constant quality target
 
 # Misc
 $suffix = "disc"    #output is tagged with this, like "myVideo-disc.webm/mp4"
 $ll = 32            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
+$bphTarget = 5.6    #Default 5.6. how many bits per heigh (limit), before downscaling happen.
 
 ### STOP TOUCHY NOW ###
 
@@ -110,19 +111,18 @@ if ($vidBr -le 200) {
     exit
 }
 
-$bpw = $vidBr/$vidHeight #bitrate per video height
-if ($enc -eq 2) {$bpw = $bpw * 2} # if vp9, 2x bpw
+$bph = $vidBr/$vidHeight #bitrate per video height
+if ($enc -eq 2) {$bph = $bph * 2} # if vp9, 2x bph
 
-# used to be 5.5
-if ($bpw -lt 5.6) {
+if ($bph -lt $bphTarget) {
     if ($vidHeight -ge 1440) {
         $downscaleRes = 1080
         $x264crf = $x264crf-2
         $nvencCq = $nvencCq-2
     }
-    $bpw = $vidBr/1080
+    $bph = $vidBr/1080
     write-host "`nNot enough bit rate for $vidHeight`p, downscaling..." -ForegroundColor Yellow
-    if ($bpw -lt 5.6) {
+    if ($bph -lt $bphTarget) {
         $downscaleRes = 720
         $x264crf = $x264crf-2
         $vp9Crf = $vp9Crf+2
@@ -135,6 +135,7 @@ write-host "`nFile: $name`:"
 write-host "Duration: $durationSecClamp sec" -ForegroundColor Yellow
 write-host "Bitrate: $vidBr kbps" -ForegroundColor Yellow
 Write-host "Max Size: $maxSize mb" -ForegroundColor Yellow
+Write-Host ("Bits per Height (BPH): {0}" -f [math]::Round($bph, 2)) -ForegroundColor Yellow
 write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
 pause
 
