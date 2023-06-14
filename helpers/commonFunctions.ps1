@@ -109,7 +109,7 @@ Function Get-InputCodec {
     return & ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 $inputFile
 }
 
-function Get-FirstKeyframeInterval {
+function Get-FrameInfo {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
@@ -125,47 +125,100 @@ function Get-FirstKeyframeInterval {
     
     write-host "`r"
     write-host "Checking for keyframes..."
-    $probeData = & ffprobe -v error -read_intervals %12 -select_streams v:0 -show_entries frame=key_frame -of default=noprint_wrappers=1 $inputFile
-
+    $probeData = & ffprobe -v error -read_intervals %12 -select_streams v:0 -show_entries frame=key_frame,pict_type,duration,repeat_pict $inputFile
     # Split the output into an array of frames
-    $frames = $probeData -split '\[FRAME\]|\[/FRAME\]' | Where-Object { $_.Trim() -ne "" }
+    $framesRaw = $probeData -split '\r\n'
 
-    # Initialize variables
+    # Process each raw frame
+    $frames = @()
+    $frameHashtable = @{}
+    foreach ($line in $framesRaw) {
+
+        if ($line -match "^\[FRAME\]|^\[/FRAME\]") {
+            # If it's a new frame line and there's a previous frame, add it to the frames array
+            if ($frameHashtable.Count -gt 0) {
+                $frames += $frameHashtable
+            }
+            # Clear the hashtable for the new frame
+            $frameHashtable = @{}
+        }
+        elseif ($line -match "=") {
+            $key, $value = $line -split "=", 2
+            $key = $key.Trim()
+            $value = $value.Trim()
+            $frameHashtable[$key] = $value
+        }
+    }
+
+    # Add the last frame
+    if ($frameHashtable.Count -gt 0) {
+        $frames += $frameHashtable
+    }
+
+    # Initialize an empty array to hold pict_type of first 20 frames
+    $frameTypes = @()
+
+    <# foreach ($frame in $frames) {
+        foreach ($property in $frame.Keys) {
+            Write-Host ("$property " + $frame[$property])
+        }
+        Write-Host "----------------"
+    } #>
+
+    # Iterate over the first 20 frames
+    for ($i = 0; $i -lt [Math]::Min(10, $frames.Count); $i++) {
+        # Add the pict_type of the frame to the array
+        $frameTypes += $frames[$i]["pict_type"]
+    }
+
+    # Join the frame types into a single string
+    $frameTypesString = -join $frameTypes
+
+    #Write-host $frameTypes 
+    #Write-host $frameTypesString 
+    
+    # Initialize variables for GOP detection
     $frameCount = 0
     $keyframeCount = 0
     $frameLimit = 1500
     $totalFramesInProbe = [Math]::Min((12 * $framerate) - 1, $totalFrames - 1)
 
-    write-host "Parsing frames"
+    # Use the minimum of frameLimit and totalFramesInProbe
+    $frameThreshold = [Math]::Min($frameLimit, $totalFramesInProbe)
+
+    $continueProcessing = $true
+    $gopSize = 0
+
     foreach ($frame in $frames) {
         # Increment the frame count for each frame
         $frameCount++
 
-        #write-host "Frame $frameCount / $totalFramesInProbe | Limit: $frameLimit"
-
-        if ($frameCount -eq $totalFramesInProbe) {
-            Write-Warning "Short file or open GOP? No 2nd keyframe found in $frameCount frames."
-            return $frameCount
-        }
-
-        if ($frame -match "key_frame=1") {
+        if ($frame.key_frame -eq 1 -and $continueProcessing) {
             # If it's a key frame, increment the key frame count
             $keyframeCount++
 
-            if ($keyframeCount -gt 1) {
+            if ($keyframeCount -eq 2) {
                 # If it's not the first key frame, calculate the interval and return
-                write-host "GOP found!" -ForegroundColor Green
-                return $frameCount
+                Write-Host "GOP found!" -ForegroundColor Green
+                $gopSize = $frameCount-1
+                $continueProcessing = $false
             }
-
-            # Reset the frame count after a key frame
-            $frameCount = 0
+        }
+        
+        if ($frameCount -ge $frameThreshold -and $continueProcessing) {
+            # Exit the loop if the frame count has reached the threshold and no second key frame has been found yet
+            $continueProcessing = $false
         }
     }
 
     # If no keyframe interval found, print the message
-    Write-Host "No 2nd keyframe found! Video only has a single GOP, or keyint distance is over $frameLimit or is over 12 sec. GOP will be wrong" -ForegroundColor Red
-    return $frameLimit
+    if ($gopSize -eq 0) {
+        Write-Host "`nWarn: No keyframe found! Video only has a single GOP, or keyint distance is over $frameThreshold frames or is over 12 sec. GOP will be inaccurate`n" -ForegroundColor Red
+        $gopSize = $frameCount
+    }
+
+    return @{gopSize = $gopSize; frameTypesString = $frameTypesString}
+
 }
 
 Function Get-MaxRef {
@@ -254,8 +307,13 @@ Function Get-VideoStreamInfo {
     $info.Remove('r_frame_rate')
 
     $avgFrameRateParts = $info['avg_frame_rate'] -split '/'
-    $avgFrameRate = $avgFrameRateParts[0] / $avgFrameRateParts[1]
-    $info['AvgFPS'] = [math]::Round($avgFrameRate, 3)
+    try {
+        $avgFrameRate = $avgFrameRateParts[0] / $avgFrameRateParts[1]
+        $info['AvgFPS'] = [math]::Round($avgFrameRate, 3)
+    } catch {
+        Write-Warning "Avg framerate missing/unknown!"
+        $info['AvgFPS'] = "?"
+    }
     $info.Remove('avg_frame_rate')
 
     $info['BFrames'] = $info['has_b_frames'] -ne '0'
@@ -265,32 +323,44 @@ Function Get-VideoStreamInfo {
     $totalFrames = $info['nb_frames']
     if ($totalFrames -eq "N/A") {
         Write-Warning "No explicit total frames, guesstimating..."
+        write-host "stream duration: $($info['duration']), format duration: $($formatInfo['duration'])"
 
         # Convert durations to Double before calculation
         [double]$duration = 0
         [double]$maxFps = [double]$info['MaxFPS(R)']
 
         # Default to format-level duration
-        if (![string]::IsNullOrEmpty($formatInfo['duration']) -and [double]::TryParse($formatInfo['duration'], [ref]$duration)) {
-            $duration = [double]::Parse($formatInfo['duration'], [Globalization.CultureInfo]::InvariantCulture)
+
+        $duration = $formatInfo['duration'] -as [double]
+        if ($duration -eq 0) {
+            Write-Warning "Failed to get format duration. `nformat duration: $($formatInfo['duration'])"
         }
 
         # Override with stream-level duration if available
-        if (![string]::IsNullOrEmpty($info['duration']) -and $info['duration'] -ne "N/A" -and [double]::TryParse($info['duration'], [ref]$duration)) {
+        <# if (![string]::IsNullOrEmpty($info['duration']) -and $info['duration'] -ne "N/A" -and [double]::TryParse($info['duration'], [ref]$duration)) {
             $duration = [double]::Parse($info['duration'], [Globalization.CultureInfo]::InvariantCulture)
-        }
+            write-host "Stream duration Found! `r$duration" -ForegroundColor Green
+        } else {
+            Write-Warning "Failed to get stream duration: `rstream duration: $info['duration']"
+        } #>
 
         $totalFrames = [Math]::Round($duration * $maxFps)
+        write-host "Guessed Total Frames: $totalFrames, Duration: $duration, FPS: $maxFps"
     }
 
     # Call the function to get the first keyframe interval
-    $firstKeyframeInterval = Get-FirstKeyframeInterval -inputFile $inputFile -totalFrames $totalFrames -framerate $maxFrameRate
+    $result = Get-FrameInfo -inputFile $inputFile -totalFrames $totalFrames -framerate $maxFrameRate
+    $firstKeyframeInterval = $result.gopSize
+    $frameTypesString = $result.frameTypesString
 
     # Calculate the keyframe interval in seconds
     $keyframeIntervalInSeconds = [math]::Round($firstKeyframeInterval / $maxFrameRate, 3)
 
     # Add the keyframe interval as a property
     $info['keyint (sec)'] = "$firstKeyframeInterval ($keyframeIntervalInSeconds)"
+
+    # add frameTypeString
+    $info['GOP Struct'] = $frameTypesString
 
     write-host "`r"
     if ($info['codec_name'] -eq "h264") {

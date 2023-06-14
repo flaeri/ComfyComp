@@ -32,11 +32,11 @@ $videoInfo = Get-VideoStreamInfo -inputFile $inputVideo
 $videoInfo | Add-Member -Type NoteProperty -Name GOP -Value $firstKeyframeInterval
 
 if ($videoInfo.codec_name -eq "h264") {
-    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "time_base", "DAR", "SAR", "refs", "BFrames", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
+    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "GOP Struct", "time_base", "DAR", "SAR", "refs", "BFrames", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
 } elseif ($videoInfo.codec_name -eq "hevc") {
-    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "time_base", "DAR", "SAR", "BFrames", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
+    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "GOP Struct", "time_base", "DAR", "SAR", "BFrames", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
 } else {
-    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "time_base", "DAR", "SAR", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
+    $tableProps = "codec_name", "profile", "level", 'MaxFPS(R)', "AvgFPS", 'keyint (sec)', "GOP Struct", "time_base", "DAR", "SAR", "pix_fmt", "color_range", "color_space", "color_transfer", "color_primaries"
 }
 
 #print table
