@@ -56,7 +56,7 @@ Set-FileVars($video) #full=wPath, base=noExt,
 # enc: 0=nvenc, 1=x264, 2=vp9
 if ($choice -eq 0) {
     write-host "Testing nvenc..." -ForegroundColor Yellow
-    ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_nvenc -t 0.1 -f null -
+    ffmpeg -hide_banner -f lavfi -loglevel error -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_nvenc -t 0.1 -f null -
     if ($?) {
         write-host "Nvenc OK!" -ForegroundColor green
         $enc = 0 #nvenc

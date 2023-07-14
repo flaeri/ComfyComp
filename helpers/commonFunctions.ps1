@@ -125,7 +125,7 @@ function Get-FrameInfo {
     
     write-host "`r"
     write-host "Checking for keyframes..."
-    $probeData = & ffprobe -v error -read_intervals %12 -select_streams v:0 -show_entries frame=key_frame,pict_type,duration,repeat_pict $inputFile
+    $probeData = & ffprobe -v error -read_intervals %12 -select_streams v:0 -show_entries frame=key_frame,pict_type,duration,repeat_pict,pts $inputFile
     # Split the output into an array of frames
     $framesRaw = $probeData -split '\r\n'
 
@@ -163,19 +163,40 @@ function Get-FrameInfo {
             Write-Host ("$property " + $frame[$property])
         }
         Write-Host "----------------"
-    } #>
+    }  #>
+
+    $Duration = [int]$frames[1]["pts"]-[int]$frames[0]["pts"]
+    $vfr = $false
 
     # Iterate over the first 20 frames
     for ($i = 0; $i -lt [Math]::Min(10, $frames.Count); $i++) {
-        # Add the pict_type of the frame to the array
-        $frameTypes += $frames[$i]["pict_type"]
+        #$Duration = $frames[$i]["duration"]
+        if ($i -eq 0) {
+            write-host "First frame duration: $Duration"
+            $frameTypes += $frames[$i]["pict_type"]
+            $previousPts = $frames[$i]["pts"]
+        } else {
+            # Add the pict_type of the frame to the array
+            $frameTypes += $frames[$i]["pict_type"]
+            $currentPts = $frames[$i]["pts"]
+            $correctPts = [int]$previousPts + [int]$Duration
+            #write-host "pre: $previousPts cur: $currentPts dur: $Duration"
+
+            if ($currentPts -ne $correctPts) {
+                $vfr = $true
+                $wrongDuration = [int]$currentPts - [int]$previousPts
+                Write-Warning "Pts not matching duration. Frame at index $i should have duration $Duration, but previous frame had duration $wrongDuration."
+                #Write-Warning "pre: $previousPts cur: $currentPts dur: $Duration"
+                #Write-Warning "expected: $correctPts not $currentPts"
+            }
+            # Update the previous duration to the current one for the next iteration
+            $previousPts = $currentPts
+        } 
     }
+    Write-Warning "VFR detected! Not all frames have the same PTS interval"
 
     # Join the frame types into a single string
     $frameTypesString = -join $frameTypes
-
-    #Write-host $frameTypes 
-    #Write-host $frameTypesString 
     
     # Initialize variables for GOP detection
     $frameCount = 0
@@ -217,7 +238,7 @@ function Get-FrameInfo {
         $gopSize = $frameCount
     }
 
-    return @{gopSize = $gopSize; frameTypesString = $frameTypesString}
+    return @{gopSize = $gopSize; frameTypesString = $frameTypesString; vfr = $vfr;}
 
 }
 
@@ -346,21 +367,23 @@ Function Get-VideoStreamInfo {
 
         $totalFrames = [Math]::Round($duration * $maxFps)
         write-host "Guessed Total Frames: $totalFrames, Duration: $duration, FPS: $maxFps"
+    } else {
+        write-host "Total frames: $totalFrames" -ForegroundColor Green
     }
 
     # Call the function to get the first keyframe interval
     $result = Get-FrameInfo -inputFile $inputFile -totalFrames $totalFrames -framerate $maxFrameRate
     $firstKeyframeInterval = $result.gopSize
     $frameTypesString = $result.frameTypesString
+    $vfr = $result.vfr
 
     # Calculate the keyframe interval in seconds
     $keyframeIntervalInSeconds = [math]::Round($firstKeyframeInterval / $maxFrameRate, 3)
 
     # Add the keyframe interval as a property
     $info['keyint (sec)'] = "$firstKeyframeInterval ($keyframeIntervalInSeconds)"
-
-    # add frameTypeString
     $info['GOP Struct'] = $frameTypesString
+    $info['VFR?'] = $vfr
 
     write-host "`r"
     if ($info['codec_name'] -eq "h264") {

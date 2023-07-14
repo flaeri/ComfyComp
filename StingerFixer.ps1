@@ -31,7 +31,8 @@ Clear-Host
 # naming stuff
 Set-FileVars($inputStinger) #full=wPath, base=noExt,
 
-$inputCodec = ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 $inputStinger
+#$inputCodec = ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 $inputStinger
+$inputCodec = Get-InputCodec -inputFile $inputStinger
 
 write-host "Processing, please be patient" -ForegroundColor Yellow
 
