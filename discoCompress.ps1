@@ -56,7 +56,7 @@ Clear-Host
 # naming stuff
 Set-FileVars($video) #full=wPath, base=noExt,
 
-# enc: 0=nvenc, 1=x264, 2=vp9
+# enc: 0=nvenc, 1=x264, 2=vp9, 3=amf
 if ($choice -eq 0) {
     write-host "Testing nvenc..." -ForegroundColor Yellow
     ffmpeg -hide_banner -f lavfi -loglevel error -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_nvenc -t 0.1 -f null -
@@ -64,8 +64,14 @@ if ($choice -eq 0) {
         write-host "Nvenc OK!" -ForegroundColor green
         $enc = 0 #nvenc
     } else {
-        write-host "No hw accel encode device found, x264 (CPU) it is!" -ForegroundColor Yellow
-        $enc = 1 #x264
+        ffmpeg -hide_banner -f lavfi -loglevel error -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_amf -t 0.1 -f null -
+        if ($?) {
+            write-host "AMF OK!" -ForegroundColor Green
+            $enc = 3
+        } else {
+            write-host "No hw accel encode device found, x264 (CPU) it is!" -ForegroundColor Yellow
+            $enc = 1 #x264
+        }
     }
     $ext = "mp4"
 } else {
@@ -187,6 +193,11 @@ switch ( $enc )
     2 {
         $cv = "-c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf -b:v $vidBr`k"
         $ca = "-c:a libopus -b:a $audioBr`k"
+        $command = "ffmpeg $preInput $inFile $cv $ca $pix $scale $outFile"
+    }
+    3 {
+        $cv = "-c:v h264_amf -profile:v 100 -quality speed -rc 5 -b:v $vidBr`k -pa_lookahead_buffer_depth 20 -pa_taq_mode 2"
+        $ca = "-c:a aac -b:a $audioBr`k"
         $command = "ffmpeg $preInput $inFile $cv $ca $pix $scale $outFile"
     }
 }
