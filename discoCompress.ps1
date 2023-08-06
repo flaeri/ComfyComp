@@ -30,7 +30,10 @@ Push-Location $dir
 . .\helpers\banner.ps1
 . .\helpers\ffmpegInfo.ps1
 . .\helpers\commonFunctions.ps1
+. .\helpers\ffUpdateCheck.ps1
 write-host "`r"
+
+CheckFfmpegVersions
 
 #static
 $question = "Fast (h264, lower quality), Slow (vp9, higher quality)"

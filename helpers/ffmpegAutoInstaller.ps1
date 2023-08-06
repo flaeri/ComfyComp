@@ -1,20 +1,21 @@
-# This script will automatically download and extract ffmpeg into
-# C:\ffmpeg\ and add it to your path :)
+# This script will automatically download and extract ffmpeg into C:\ffmpeg
 $ffmpegPath = "C:\ffmpeg"
-if (Test-Path "$ffmpegPath\ffmpeg.exe") {
-    Start-Process "$ffmpegPath\ffmpeg.exe"
-    write-host "Seems you already have ffmpeg in $ffmpegpath" -ForegroundColor Green
-    write-host "no need to run this script again, we have what we need." -ForegroundColor Green
-    pause
+
+Write-Host "Downloading the latest ffmpeg version to $ffmpegPath." -ForegroundColor Yellow
+$ProgressPreference = 'SilentlyContinue' # Faster download
+Write-Host "We're downloading. Please be patient :)"
+Invoke-WebRequest -Uri https://otterbro.com/ffmpeg.zip -outfile "ffmpeg.zip"
+$ProgressPreference = 'Continue'
+
+# Create directory if it doesn't exist, or clear it if it does
+if (Test-Path $ffmpegPath) {
+    Get-ChildItem -Path $ffmpegPath -Recurse | Remove-Item -Force -Recurse
 } else {
-    Write-Host "$ffmpegPath does not exist, downloading it." -ForegroundColor Yellow
-    $ProgressPreference = 'SilentlyContinue' #its very slow to download without this
-    Write-Host "We're downloading. Please be patient :)"
-    Invoke-WebRequest -Uri https://otterbro.com/ffmpeg.zip -outfile "ffmpeg.zip"
-    $ProgressPreference = 'Continue'
-    New-Item -path "$ffmpegPath" -ItemType "directory" -ErrorAction SilentlyContinue
-    Expand-Archive -path "ffmpeg.zip" $ffmpegPath
-    Remove-Item "ffmpeg.zip"
-    Write-Host "adding ffmpeg to path" -ForegroundColor Green
-    $ENV:PATH="$ENV:PATH;$FlaeriFfmpegPath"
+    New-Item -path $ffmpegPath -ItemType "directory"
 }
+
+# Extract ffmpeg
+Expand-Archive -path "ffmpeg.zip" $ffmpegPath
+Remove-Item "ffmpeg.zip"
+$global:ffmpegOutdated = $false
+Write-Host "Updated ffmpeg in $ffmpegPath." -ForegroundColor Green
