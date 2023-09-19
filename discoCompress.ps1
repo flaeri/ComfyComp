@@ -171,20 +171,23 @@ function Get-BitsPerHeight  {
         [Int16]$encoder,
 
         [Parameter(Mandatory=$true)]
-        [Int16]$height
+        [Int16]$height,
+
+        [Parameter(Mandatory=$true)]
+        [double]$bphTarget
     )
 
     $bph = $vidBr/ $height #bitrate per video height
     if ($encoder -eq 2) {$bph = $bph * 2} # if vp9, 2x bph
 
     if ($bph -lt $bphTarget) {
-        if ($vidHeight -ge 1440) {
+        if ($height -ge 1440) {
             $downscaleRes = 1080
             $x264crf = $x264crf-2
             $nvencCq = $nvencCq-2
         }
         $bph = $vidBr/1080
-        write-host "`nNot enough bit rate for $vidHeight`p, downscaling..." -ForegroundColor Yellow
+        write-host "`nNot enough bit rate for $height`p, downscaling..." -ForegroundColor Yellow
         if ($bph -lt $bphTarget) {
             $downscaleRes = 720
             $x264crf = $x264crf-2
@@ -198,7 +201,6 @@ function Get-BitsPerHeight  {
 }
 
 function Write-VideoInfo {
-    Clear-Host #clear the shell
     write-host "`nFile: $name`:"
     write-host "Duration: $($videoInfo.DurationSecClamp) sec" -ForegroundColor Yellow
     write-host "Bitrate: $vidBr kbps" -ForegroundColor Yellow
@@ -338,7 +340,7 @@ do {
 
     $maxSize, $safeSize = Get-Size #prompts for filesize and calculates size
     $bufsize, $vidBr = Get-Bitrate -safeSize $safeSize -duration $videoInfo.DurationSec -audioBr $audioBr
-    $bph, $downscaleRes = Get-BitsPerHeight -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight
+    $bph, $downscaleRes = Get-BitsPerHeight -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
 
     Write-VideoInfo
     write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
