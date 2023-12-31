@@ -53,12 +53,27 @@ function Get-Size {
 }
 
 function Get-File {
-    #get file
-    $video = read-host -Prompt "`nPlease drag&drop a video, then hit Enter" #drag video in
-    $video = get-childitem -path ($video -replace '"', "") #input is dumbass string, fix it
+    do {
+        # Prompt the user to drag and drop a video
+        $videoPath = Read-Host -Prompt "`nPlease drag&drop a video, then hit Enter"
 
-    # naming stuff
-    Set-FileVars($video) #full=wPath, base=noExt
+        # Strip surrounding quotes if they exist
+        $videoPath = $videoPath -replace '^"(.*)"$', '$1'
+
+        # Check if the input is not empty and is a valid file path
+        if (-not [String]::IsNullOrWhiteSpace($videoPath) -and (Test-Path -Path $videoPath -PathType Leaf)) {
+            # The input is a valid file path, convert it to FileInfo object
+            $video = Get-ChildItem -Path $videoPath
+
+            # Naming stuff
+            Set-FileVars $video # Full=wPath, Base=noExt
+            break
+        } else {
+            # The input is invalid, display a warning and continue the loop
+            Write-Host "Invalid input. Please enter a valid file path." -ForegroundColor Yellow
+        }
+    } while ($true)
+
     return $video
 }
 
@@ -80,21 +95,21 @@ function Select-Encoder {
                 $enc = 1 #x264
             }
         }
-        $outExension = "mp4"
+        $outExtension = "mp4"
     } else {
         ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v libvpx-vp9 -t 0.1 -f null -
         if ($?) {
             write-host "VP9 OK!" -ForegroundColor green
             $enc = 2 #nvenc
-            $outExension = "webm"
+            $outExtension = "webm"
         } else {
             write-host "No VP9 encoder found, falling back to x264" -ForegroundColor Yellow
             $enc = 1 #x264
-            $outExension = "mp4"
+            $outExtension = "mp4"
         }
     }
     Clear-Host
-    return $enc, $outExension
+    return $enc, $outExtension
 }
 
 function Get-VideoInfo {
@@ -228,8 +243,15 @@ function Build-FFmpegCommand {
     )
     ## Build ffmpeg command
     # Input
+
+    ## Escape apostrophes in the filename
+    $escapedVideo = $video -replace "'", "`'"
+
+    ## Build ffmpeg command
+    # Input
     $preInput = "-hide_banner -loglevel $ll"
-    $inFile = "-i '$video'"
+    $inFile = "-i `"$escapedVideo`"" # Use double quotes and escaped filename
+
     # scale / HDR
     #$src_range = "-src_range 0"
     #$pix = "-pix_fmt yuv420p"
@@ -247,7 +269,7 @@ function Build-FFmpegCommand {
     $flags = "-movflags +faststart"
 
     # Output
-    $outFile = "'$dir\$baseName-$suffix.$outExension'"
+    $outFile = "`"$dir\$baseName-$suffix.$outExtension`"" # Use double quotes and escape them
 
     #codec selector
     switch ( $enc )
@@ -286,7 +308,7 @@ function Invoke-Encode {
         $ffCommand,
 
         [Parameter(Mandatory=$true)]
-        $outExension
+        $outExtension
 
     )
 
@@ -295,17 +317,24 @@ function Invoke-Encode {
     # Actual run
     Invoke-Expression $ffCommand
 
-    # check both for output file existing and null size
-    $outputFile = get-childitem -Path "$dir\$baseName-$suffix.$outExension" -ErrorAction SilentlyContinue
-    if (!($outputFile.Length -gt 0)) {
-        write-host "FFmpeg failed!" -ForegroundColor Red
-        write-host "Please check error messages above"
+    $outputFilePath = Join-Path -Path $dir -ChildPath "$baseName-$suffix.$outExtension"
+
+    # Check if the file exists and is not empty
+    if (-not (Test-Path -Path $outputFilePath -PathType Leaf)) {
+        Write-Host "FFmpeg failed!" -ForegroundColor Red
+        write-host "Path: $outputFilePath"
+        Write-Host "Output file not found. Please check error messages above."
+        psPause
+    } elseif ((Get-Item -Path $outputFilePath).Length -le 0) {
+        Write-Host "FFmpeg failed!" -ForegroundColor Red
+        Write-Host "Output file is empty. Please check error messages above."
         psPause
     }
 
     write-host "`n"
     Stop-Timer $name $startTime
 
+    $outputFile = Get-ChildItem $outputFilePath
     $outputFileSize = [math]::Round($outputFile.Length / 1MB, 2)
     if ($outputFileSize -gt $maxSize) {
         write-host "Fail! File is larger ($outputFileSize MB) than $maxSize MB" -ForegroundColor Red
@@ -332,7 +361,7 @@ do {
     if ($nextChoice -eq -1 -or $nextChoice -eq 1) {
         # If it's the first run or user chose to run with new settings
         $encoderChoice = Get-EncodingChoice #pick encode, 0 = fast, 1 = slow
-        $enc, $outExension = Select-Encoder #gets encoder and extension
+        $enc, $outExtension = Select-Encoder #gets encoder and extension
     }    
 
     $video = Get-File #gets and parses file, path, extensions etc
@@ -346,8 +375,8 @@ do {
     write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
     pause
 
-    $ffCommand = Build-FFmpegCommand -video $video -hdr $videoInfo.HDR -downscaleRes $downscaleRes -encoder $enc -outExtension $outExension
-    Invoke-Encode -ffCommand $ffCommand -outExension $outExension
+    $ffCommand = Build-FFmpegCommand -video $video -hdr $videoInfo.HDR -downscaleRes $downscaleRes -encoder $enc -outExtension $outExtension
+    Invoke-Encode -ffCommand $ffCommand -outExtension $outExtension
 
     # Prompt for next action
     $nextChoice = Get-NextActionChoice
