@@ -185,15 +185,18 @@ function Get-FrameInfo {
             if ($currentPts -ne $correctPts) {
                 $vfr = $true
                 $wrongDuration = [int]$currentPts - [int]$previousPts
-                Write-Warning "Pts not matching duration. Frame at index $i should have duration $Duration, but previous frame had duration $wrongDuration."
-                #Write-Warning "pre: $previousPts cur: $currentPts dur: $Duration"
-                #Write-Warning "expected: $correctPts not $currentPts"
+                write-host "Pts not matching duration. Frame at index $i should have duration $Duration, but previous frame had duration $wrongDuration."
             }
             # Update the previous duration to the current one for the next iteration
             $previousPts = $currentPts
         } 
     }
-    Write-Warning "VFR detected! Not all frames have the same PTS interval"
+    
+    if ($vfr) {
+        write-host "`r"
+        Write-Warning "VFR detected! Not all frames have the same PTS interval"
+        write-host "`r"
+    }
 
     # Join the frame types into a single string
     $frameTypesString = -join $frameTypes
