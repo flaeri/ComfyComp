@@ -52,31 +52,6 @@ function Get-Size {
     return $maxSize, $safeSize
 }
 
-function Get-File {
-    do {
-        # Prompt the user to drag and drop a video
-        $videoPath = Read-Host -Prompt "`nPlease drag&drop a video, then hit Enter"
-
-        # Strip surrounding quotes if they exist
-        $videoPath = $videoPath -replace '^"(.*)"$', '$1'
-
-        # Check if the input is not empty and is a valid file path
-        if (-not [String]::IsNullOrWhiteSpace($videoPath) -and (Test-Path -Path $videoPath -PathType Leaf)) {
-            # The input is a valid file path, convert it to FileInfo object
-            $video = Get-ChildItem -Path $videoPath
-
-            # Naming stuff
-            Set-FileVars $video # Full=wPath, Base=noExt
-            break
-        } else {
-            # The input is invalid, display a warning and continue the loop
-            Write-Host "Invalid input. Please enter a valid file path." -ForegroundColor Yellow
-        }
-    } while ($true)
-
-    return $video
-}
-
 function Select-Encoder {
     # enc: 0=nvenc, 1=x264, 2=vp9, 3=QSV
     if ($encoderChoice -eq 0) {
@@ -110,42 +85,6 @@ function Select-Encoder {
     }
     Clear-Host
     return $enc, $outExtension
-}
-
-function Get-VideoInfo {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$video
-    )
-
-    # Probe input file
-    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=color_space:stream=color_range -of default=noprint_wrappers=1 "$video"
-
-    # get duration of file
-    $durationSec = ($probeData | Select-String "duration=").Line.Split('=')[1].Trim()
-    $durationSecClamp = [math]::Round($durationSec)
-
-    # get height
-    $vidHeight = ($probeData | Select-String "height=").Line.Split('=')[1].Trim()
-
-    # get input color range. Not currently used
-    $inRange = ($probeData | Select-String "color_range=").Line.Split('=')[1].Trim()
-
-    # get HDR
-    $colorSpace = ($probeData | Select-String "color_space=").Line.Split('=')[1].Trim()
-    $hdr = $false
-    if ($colorSpace -like "bt2020*") {
-        Write-Host "`n HDR file detected, Color Space: $colorSpace" -ForegroundColor Yellow
-        $hdr = $true
-    }
-
-    # Return results as a custom object
-    return @{
-        DurationSec       = $durationSec
-        DurationSecClamp  = $durationSecClamp
-        VidHeight         = $vidHeight
-        HDR               = $hdr
-    }
 }
 
 function Get-Bitrate {
