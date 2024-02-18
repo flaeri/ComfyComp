@@ -279,6 +279,50 @@ Function Get-MaxRef {
 
 }
 
+Function Get-VideoFramerateAndDuration {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$inputFile
+    )
+
+    # Retrieve stream data including framerate and total frames
+    $probeData = & ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate,duration,nb_frames -of default=noprint_wrappers=1 "$inputFile"
+    # Retrieve format data including total duration
+    $formatData = & ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 "$inputFile"
+
+    # Parse the framerate
+    $frameRateParts = ($probeData | Select-String "r_frame_rate=") -replace 'r_frame_rate=', '' -split '/'
+    $frameRate = if ($frameRateParts.Count -eq 2) { 
+        [math]::Round([double]$frameRateParts[0] / [double]$frameRateParts[1], 3) 
+    } else { 
+        0 
+    }
+
+    # Determine duration by prioritizing stream duration over format duration
+    $streamDuration = ($probeData | Select-String "duration=") -replace 'duration=', ''
+    if (-not $streamDuration -or $streamDuration -eq 'N/A') {
+        $streamDuration = ($formatData | Select-String "duration=") -replace 'duration=', ''
+    }
+    $streamDuration = [double]$streamDuration
+
+    # Estimate or directly use total frames
+    $nbFrames = ($probeData | Select-String "nb_frames=") -replace 'nb_frames=', ''
+    if ($nbFrames -eq 'N/A' -or -not $nbFrames) {
+        if ($streamDuration -gt 0 -and $frameRate -gt 0) {
+            $nbFrames = [math]::Round($streamDuration * $frameRate)
+        } else {
+            $nbFrames = 'Unknown'
+        }
+    }
+
+    return @{
+        Framerate = $frameRate
+        TotalFrames = $nbFrames
+        Duration = $streamDuration
+    }
+}
+
 Function Get-VideoStreamInfo {
     [CmdletBinding()]
     param(
@@ -360,14 +404,6 @@ Function Get-VideoStreamInfo {
             Write-Warning "Failed to get format duration. `nformat duration: $($formatInfo['duration'])"
         }
 
-        # Override with stream-level duration if available
-        <# if (![string]::IsNullOrEmpty($info['duration']) -and $info['duration'] -ne "N/A" -and [double]::TryParse($info['duration'], [ref]$duration)) {
-            $duration = [double]::Parse($info['duration'], [Globalization.CultureInfo]::InvariantCulture)
-            write-host "Stream duration Found! `r$duration" -ForegroundColor Green
-        } else {
-            Write-Warning "Failed to get stream duration: `rstream duration: $info['duration']"
-        } #>
-
         $totalFrames = [Math]::Round($duration * $maxFps)
         write-host "Guessed Total Frames: $totalFrames, Duration: $duration, FPS: $maxFps"
     } else {
@@ -427,7 +463,7 @@ function Get-VideoInfo {
     )
 
     # Probe input file
-    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=width:stream=color_space:stream=color_range -of default=noprint_wrappers=1 "$video"
+    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=width:stream=color_space:stream=color_range:stream=channel_layout -of default=noprint_wrappers=1 "$video"
 
     # get duration of file
     $durationSec = ($probeData | Select-String "duration=").Line.Split('=')[1].Trim()
@@ -448,6 +484,14 @@ function Get-VideoInfo {
         $hdr = $true
     }
 
+    # Get audio channel layout and determine if it's surround sound
+    $audioChannelLayout = ($probeData | Select-String "channel_layout=").Line.Split('=')[1].Trim()
+    $surroundSound = $false
+    if (-not [string]::IsNullOrWhiteSpace($audioChannelLayout) -and $audioChannelLayout -ne "stereo" -and $audioChannelLayout -ne "mono") {
+        Write-Host "`nSurround sound or complex audio layout detected, Layout: $audioChannelLayout" -ForegroundColor Yellow
+        $surroundSound = $true
+    }
+
     # Return results as a custom object
     return @{
         DurationSec       = $durationSec
@@ -455,6 +499,8 @@ function Get-VideoInfo {
         VidHeight         = $vidHeight
         VidWidth          = $vidWidth
         HDR               = $hdr
+        AudioChannelLayout= $audioChannelLayout
+        SurroundSound     = $surroundSound
     }
 }
 
@@ -481,4 +527,20 @@ function Get-File {
     } while ($true)
 
     return $video
+}
+
+function Get-AudioDownmixCommand {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$audioChannelLayout
+    )
+
+    $downmixMap = @{
+        "5.1" = "pan=stereo|FL=0.5*FC+0.707*FL+0.5*BL+0.5*LFE|FR=0.5*FC+0.707*FR+0.5*BR+0.5*LFE, volume=1.50";
+        "5.1(side)" = "pan=stereo|FL=0.5*FC+0.707*FL+0.5*SL+0.5*LFE|FR=0.5*FC+0.707*FR+0.5*SR+0.5*LFE, volume=1.50";
+        "7.1" = "pan=stereo|FL=0.5*FC+0.707*FL+0.5*BL+0.5*SL+0.5*LFE|FR=0.5*FC+0.707*FR+0.5*BR+0.5*SR+0.5*LFE, volume=1.50";
+    }
+
+    # Return the matching downmix command or $null if not found
+    return $downmixMap[$audioChannelLayout]
 }

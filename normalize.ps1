@@ -6,7 +6,7 @@ $nvencCq = 23      # Nvenc H264 constant quality target
 
 # Misc
 $suffix = "norm"    #output is tagged with this, like "myVideo-disc.webm/mp4"
-$ll = 32            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
+$ll = 24            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
 
 ### STOP TOUCHY NOW ###
 
@@ -41,12 +41,9 @@ function Build-FFmpegCommandNormal {
 
     ## Build ffmpeg command
     # Input
-    $ll = 48
-    $preInput = "-hide_banner -loglevel $ll"
+    #$ll = 32
+    $preInput = "-hide_banner -loglevel $ll -progress pipe:1"
     $inFile = "-i `"$escapedVideo`"" # Use double quotes and escaped filename
-
-    write-host "input fileinfo:"
-    write-host $vidInfo
 
     # Initialize the filter components
     $zscaleFilters = @()
@@ -75,7 +72,20 @@ function Build-FFmpegCommandNormal {
     $vfArg = if ($filterString) { "-vf `"$filterString`"" } else { "" }
 
     # Flags
-    $flags = "-movflags +faststart -profile:v high -level:v 4.1"
+    $flags = "-movflags +faststart -profile:v high"
+
+    # Check if the video has a surround sound layout
+    $af = ""
+    if ($vidInfo["SurroundSound"]) {
+        $audioLayout = $vidInfo["AudioChannelLayout"]
+        $downmixCommand = Get-AudioDownmixCommand -audioChannelLayout $audioLayout
+    
+        if ($downmixCommand) {
+            # Apply the specific downmix command if available
+            $af = "-af `"$downmixCommand`""
+            Write-Host "`nSpecific downmix command applied: `n$downmixCommand"
+        } else {write-host "`nNo specific downmix found, using -ac 2"}
+    }    
 
     # Output
     $audioBr = 192
@@ -84,7 +94,8 @@ function Build-FFmpegCommandNormal {
     #codec selector
     # Codec selection and command assembly
     $cv = ""
-    $ca = "-c:a aac -b:a ${audioBr}k"
+    $ca = "-c:a aac -b:a ${audioBr}k -ac 2"
+
     switch ($encoder) {
         0 {
             $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate 120M -bufsize 240M -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
@@ -94,12 +105,15 @@ function Build-FFmpegCommandNormal {
         }
     }
 
-    $command = "ffmpeg $preInput $inFile $cv $ca $vfArg $flags $outFile"
+    $command = "ffmpeg $preInput $inFile $cv $ca $af $vfArg $flags $outFile"
+    #write-host "`nUsing ffcmd: $command"
     return $command
 }
 
 $video = Get-File #gets and parses file, path, extensions etc
 $videoInfo = Get-VideoInfo -video $video #runs ffprobe, bring back videoInfo.DurationSec, VidHeigh, HDR etc
+$streamInfo = Get-VideoFramerateAndDuration -inputFile $video
+$maxFrames = $streamInfo.TotalFrames
 
 ### select encoder ###
 
@@ -113,11 +127,34 @@ if ($?) {
     $enc = 1 #x264
 }
 
-$ffCommand = Build-FFmpegCommandNormal -video $video -vidInfo $videoInfo -encoder 1 #$enc
+$ffCommand = Build-FFmpegCommandNormal -video $video -vidInfo $videoInfo -encoder $enc
+
 
 #timer
 Start-Timer "$name"
-Invoke-expression $ffCommand
+# Start the encoding process and monitor its progress
+Invoke-Expression $ffCommand | ForEach-Object {
+    if ($_ -match "frame=(\d+)") {
+        $frame = [int]$matches[1]
+    }
+    if ($_ -match "fps=(\S+)") {
+        $fps = $matches[1]
+    }
+    if ($_ -match "speed=(\S+)") {
+        $speed = $matches[1]
+    }
+    if ($_ -match "progress=(\S+)") {
+        $progressState = $matches[1]
+    }
+    $percentComplete = ($frame * 100 / $maxFrames)
+    if ($frame -ne $null -and $speed -ne $null -and $fps -ne $null) {
+        Write-Progress -Activity 'ffmpeg' -Status "Speed $speed (fps: $fps) Prog: $([math]::Round($percentComplete, 2))%" -PercentComplete $percentComplete
+    }
+    if ($progressState -eq "end") {
+        Write-Progress -Activity 'ffmpeg' -Completed
+        break
+    }
+}
 
 $outputFilePath = Join-Path -Path $dir -ChildPath "$baseName-$suffix.mp4"
 
