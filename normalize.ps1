@@ -132,6 +132,7 @@ $ffCommand = Build-FFmpegCommandNormal -video $video -vidInfo $videoInfo -encode
 
 #timer
 Start-Timer "$name"
+$speed = "N/A"
 # Start the encoding process and monitor its progress
 Invoke-Expression $ffCommand | ForEach-Object {
     if ($_ -match "frame=(\d+)") {
@@ -146,9 +147,30 @@ Invoke-Expression $ffCommand | ForEach-Object {
     if ($_ -match "progress=(\S+)") {
         $progressState = $matches[1]
     }
+
     $percentComplete = ($frame * 100 / $maxFrames)
+
+    # Assuming total video duration is known
+    $totalDurationSec = $videoInfo.DurationSec # Replace with actual variable if different
+    $encodedDurationSec = $frame / ($streamInfo.Framerate) # Calculate encoded duration based on known framerate
+    if ($speed -ne "N/A") {
+        $currentSpeed = $speed.TrimEnd('x')
+    }
+    if ($currentSpeed -gt 0) {
+        # Calculate remaining duration based on speed
+        $timeRemainingSec = ($totalDurationSec - $encodedDurationSec) / $currentSpeed
+    }
+
+    if ($timeRemainingSec -ne "Unknown") {
+        $remainingMinutes = [math]::Floor($timeRemainingSec / 60)
+        $remainingSeconds = [math]::Round($timeRemainingSec % 60)
+        $displayTimeRemaining = "{0}m {1}s" -f $remainingMinutes, $remainingSeconds
+    } else {
+        $displayTimeRemaining = "Unknown"
+    }
+
     if ($frame -ne $null -and $speed -ne $null -and $fps -ne $null) {
-        Write-Progress -Activity 'ffmpeg' -Status "Speed $speed (fps: $fps) Prog: $([math]::Round($percentComplete, 2))%" -PercentComplete $percentComplete
+        Write-Progress -Activity 'ffmpeg' -Status "Speed $speed (fps: $fps) Prog: $([math]::Round($percentComplete, 2))% - timeRem: $displayTimeRemaining" -PercentComplete $percentComplete
     }
     if ($progressState -eq "end") {
         Write-Progress -Activity 'ffmpeg' -Completed
