@@ -5,7 +5,7 @@ $x264crf = 18       # x264 crf target
 $nvencCq = 23      # Nvenc H264 constant quality target
 
 # Misc
-$suffix = "normal"    #output is tagged with this, like "myVideo-disc.webm/mp4"
+$suffix = "norm"    #output is tagged with this, like "myVideo-disc.webm/mp4"
 $ll = 32            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
 
 ### STOP TOUCHY NOW ###
@@ -27,7 +27,7 @@ function Build-FFmpegCommandNormal {
         $video,
 
         [Parameter(Mandatory=$true)]
-        $hdr,
+        $vidInfo,
 
         [Parameter(Mandatory=$true)]
         [Int16]$encoder
@@ -45,37 +45,56 @@ function Build-FFmpegCommandNormal {
     $preInput = "-hide_banner -loglevel $ll"
     $inFile = "-i `"$escapedVideo`"" # Use double quotes and escaped filename
 
-    # scale / HDR
-    if ($hdr) {
-        write-host "`rTonemapping HDR!" -ForegroundColor Yellow
-        $scale = "-vf zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709,format=yuv420p -map_metadata -1"
+    write-host "input fileinfo:"
+    write-host $vidInfo
+
+    # Initialize the filter components
+    $zscaleFilters = @()
+
+    # Check for downscaling requirement
+    if ($vidInfo["VidWidth"] -gt 1920) {
+        $zscaleFilters += "zscale=w=1920:h=-2"
     }
 
+    # HDR tonemapping, including transfer to linear light
+    if ($vidInfo["HDR"]) {
+        # Determine if we need to prepend a comma. This is necessary if downscaling is already part of the filter.
+        $separator = if ($zscaleFilters.Count -gt 0) { "," } else { "" }
+        
+        # Construct the HDR tonemapping filter, including color space conversion
+        $hdrFilter = "${separator}zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709"
+
+        # Append the HDR filter to the filter array
+        $zscaleFilters += $hdrFilter
+    }
+
+    # Join all filter components
+    $filterString = $zscaleFilters -join ''
+
+    # Construct the final filter argument
+    $vfArg = if ($filterString) { "-vf `"$filterString`"" } else { "" }
+
     # Flags
-    $flags = "-movflags +faststart"
+    $flags = "-movflags +faststart -profile:v high -level:v 4.1"
 
     # Output
     $audioBr = 192
     $outFile = "`"$dir\$baseName-$suffix.mp4`"" # Use double quotes and escape them
 
     #codec selector
-    switch ( $encoder )
-    {
-        # h264 nvenc
+    # Codec selection and command assembly
+    $cv = ""
+    $ca = "-c:a aac -b:a ${audioBr}k"
+    switch ($encoder) {
         0 {
-            write-host "setting up nvenc"
             $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate 120M -bufsize 240M -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
-            $ca = "-c:a aac -b:a $audioBr`k"
-            $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
-        # libx264
         1 {
-            write-host "setting up x264"
             $cv = "-c:v libx264 -preset $x264p -crf $x264crf -pix_fmt yuv420p"
-            $ca = "-c:a aac -b:a $audioBr`k"
-            $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
     }
+
+    $command = "ffmpeg $preInput $inFile $cv $ca $vfArg $flags $outFile"
     return $command
 }
 
@@ -94,7 +113,7 @@ if ($?) {
     $enc = 1 #x264
 }
 
-$ffCommand = Build-FFmpegCommandNormal -video $video -hdr $videoInfo.HDR -encoder 1 #$enc
+$ffCommand = Build-FFmpegCommandNormal -video $video -vidInfo $videoInfo -encoder 1 #$enc
 
 #timer
 Start-Timer "$name"

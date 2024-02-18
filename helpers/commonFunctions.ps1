@@ -427,7 +427,7 @@ function Get-VideoInfo {
     )
 
     # Probe input file
-    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=color_space:stream=color_range -of default=noprint_wrappers=1 "$video"
+    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=width:stream=color_space:stream=color_range -of default=noprint_wrappers=1 "$video"
 
     # get duration of file
     $durationSec = ($probeData | Select-String "duration=").Line.Split('=')[1].Trim()
@@ -435,6 +435,7 @@ function Get-VideoInfo {
 
     # get height
     $vidHeight = ($probeData | Select-String "height=").Line.Split('=')[1].Trim()
+    $vidWidth = ($probeData | Select-String "width=").Line.Split('=')[1].Trim()
 
     # get input color range. Not currently used
     $inRange = ($probeData | Select-String "color_range=").Line.Split('=')[1].Trim()
@@ -452,6 +453,7 @@ function Get-VideoInfo {
         DurationSec       = $durationSec
         DurationSecClamp  = $durationSecClamp
         VidHeight         = $vidHeight
+        VidWidth          = $vidWidth
         HDR               = $hdr
     }
 }
