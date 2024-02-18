@@ -544,3 +544,54 @@ function Get-AudioDownmixCommand {
     # Return the matching downmix command or $null if not found
     return $downmixMap[$audioChannelLayout]
 }
+
+Function Write-FFmpegProgress {
+    param (
+        [Parameter(Mandatory=$true)]
+        [hashtable]$ProgressData,
+        [Parameter(Mandatory=$true)]
+        $videoInfo,
+        [Parameter(Mandatory=$true)]
+        $streamInfo
+    )
+
+    # Extracting values directly from the ProgressData hashtable
+    $frame = if ($ProgressData['frame']) { [int]$ProgressData['frame'] } else { $null }
+    $fps = if ($ProgressData['fps']) { $ProgressData['fps'] } else { $null }
+    $speed = if ($ProgressData['speed']) { $ProgressData['speed'].TrimEnd('x') } else { $null }
+    $progressState = $ProgressData['progress']
+
+    # Calculating percent complete based on the total frames and current frame
+    $percentComplete = if ($frame -and $streamInfo.TotalFrames) { ($frame * 100 / $streamInfo.TotalFrames) } else { $null }
+
+    # Assuming total video duration is known and calculating encoded duration
+    $totalDurationSec = $videoInfo.DurationSec
+    $encodedDurationSec = if ($frame -and $streamInfo.Framerate) { $frame / $streamInfo.Framerate } else { $null }
+
+    # Calculating time remaining based on speed
+    if ($speed -and $speed -ne "N/A" -and $totalDurationSec -and $encodedDurationSec) {
+        $currentSpeed = [double]$speed
+        $timeRemainingSec = ($totalDurationSec - $encodedDurationSec) / $currentSpeed
+    } else {
+        $timeRemainingSec = $null
+    }
+
+    if ($timeRemainingSec) {
+        $remainingMinutes = [math]::Floor($timeRemainingSec / 60)
+        $remainingSeconds = [math]::Round($timeRemainingSec % 60)
+        $displayTimeRemaining = "{0}m {1}s" -f $remainingMinutes, $remainingSeconds
+    } else {
+        $displayTimeRemaining = "Unknown"
+    }
+
+    # Update the progress bar if we have enough information
+    if ($null -ne $percentComplete -and $null -ne $currentSpeed -and $null -ne $fps) {
+        Write-Progress -Activity 'ffmpeg' -Status "Speed ${speed}x (fps: $fps) Progress: $([math]::Round($percentComplete, 2))% - Time Remaining: $displayTimeRemaining" -PercentComplete $percentComplete
+    }
+
+    # Handle progress completion
+    if ($progressState -eq "end") {
+        Write-Progress -Activity 'ffmpeg' -Completed
+    }
+}
+

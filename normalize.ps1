@@ -113,7 +113,6 @@ function Build-FFmpegCommandNormal {
 $video = Get-File #gets and parses file, path, extensions etc
 $videoInfo = Get-VideoInfo -video $video #runs ffprobe, bring back videoInfo.DurationSec, VidHeigh, HDR etc
 $streamInfo = Get-VideoFramerateAndDuration -inputFile $video
-$maxFrames = $streamInfo.TotalFrames
 
 ### select encoder ###
 
@@ -132,51 +131,23 @@ $ffCommand = Build-FFmpegCommandNormal -video $video -vidInfo $videoInfo -encode
 
 #timer
 Start-Timer "$name"
-$speed = "N/A"
+$progressData = @{}
 # Start the encoding process and monitor its progress
 Invoke-Expression $ffCommand | ForEach-Object {
-    if ($_ -match "frame=(\d+)") {
-        $frame = [int]$matches[1]
+    if ($_ -match "^(frame|fps|stream_0_0_q|bitrate|total_size|out_time_us|out_time_ms|out_time|dup_frames|drop_frames|speed|progress)=(.+)") {
+        $progressData[$matches[1]] = $matches[2]
     }
-    if ($_ -match "fps=(\S+)") {
-        $fps = $matches[1]
-    }
-    if ($_ -match "speed=(\S+)") {
-        $speed = $matches[1]
-    }
-    if ($_ -match "progress=(\S+)") {
-        $progressState = $matches[1]
-    }
-
-    $percentComplete = ($frame * 100 / $maxFrames)
-
-    # Assuming total video duration is known
-    $totalDurationSec = $videoInfo.DurationSec # Replace with actual variable if different
-    $encodedDurationSec = $frame / ($streamInfo.Framerate) # Calculate encoded duration based on known framerate
-    if ($speed -ne "N/A") {
-        $currentSpeed = $speed.TrimEnd('x')
-    }
-    if ($currentSpeed -gt 0) {
-        # Calculate remaining duration based on speed
-        $timeRemainingSec = ($totalDurationSec - $encodedDurationSec) / $currentSpeed
-    }
-
-    if ($timeRemainingSec -ne "Unknown") {
-        $remainingMinutes = [math]::Floor($timeRemainingSec / 60)
-        $remainingSeconds = [math]::Round($timeRemainingSec % 60)
-        $displayTimeRemaining = "{0}m {1}s" -f $remainingMinutes, $remainingSeconds
-    } else {
-        $displayTimeRemaining = "Unknown"
-    }
-
-    if ($frame -ne $null -and $speed -ne $null -and $fps -ne $null) {
-        Write-Progress -Activity 'ffmpeg' -Status "Speed $speed (fps: $fps) Prog: $([math]::Round($percentComplete, 2))% - timeRem: $displayTimeRemaining" -PercentComplete $percentComplete
-    }
-    if ($progressState -eq "end") {
-        Write-Progress -Activity 'ffmpeg' -Completed
-        break
+    if ($_ -match "progress=(continue|end)") {
+        Write-FFmpegProgress -ProgressData $progressData -videoInfo $videoInfo -streamInfo $streamInfo
+        if ($matches[1] -eq "end") {
+            Write-Host "FFmpeg encoding completed."
+        }
+        # Clear the hashtable for the next set of progress data
+        $progressData.Clear()
     }
 }
+
+Stop-Timer $name $startTime
 
 $outputFilePath = Join-Path -Path $dir -ChildPath "$baseName-$suffix.mp4"
 
@@ -192,10 +163,7 @@ if (-not (Test-Path -Path $outputFilePath -PathType Leaf)) {
     psPause
 }
 
-write-host "`n"
-Stop-Timer $name $startTime
-
 Pop-Location #pop location back to the dir script was ran from
-write-host "`Done, hit any key to open the folder containing the file(s)"
+write-host "`nDone, hit any key to open the folder containing the file(s)"
 psPause
 explorer $video.Directory
