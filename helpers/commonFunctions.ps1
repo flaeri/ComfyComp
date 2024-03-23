@@ -463,44 +463,46 @@ function Get-VideoInfo {
     )
 
     # Probe input file
-    $probeData = ffprobe -v error -show_entries format=duration:stream=height:stream=width:stream=color_space:stream=color_range:stream=channel_layout -of default=noprint_wrappers=1 "$video"
+    $videoProbeData = ffprobe -v error -select_streams v:0 -show_entries stream=width,height,color_space,color_range -of default=noprint_wrappers=1 "$video"
+    $audioProbeData = ffprobe -v error -select_streams a:0 -show_entries stream=channel_layout -of default=noprint_wrappers=1 "$video"
 
-    # get duration of file
-    $durationSec = ($probeData | Select-String "duration=").Line.Split('=')[1].Trim()
-    $durationSecClamp = [math]::Round($durationSec)
 
-    # get height
-    $vidHeight = ($probeData | Select-String "height=").Line.Split('=')[1].Trim()
-    $vidWidth = ($probeData | Select-String "width=").Line.Split('=')[1].Trim()
-
-    # get input color range. Not currently used
-    $inRange = ($probeData | Select-String "color_range=").Line.Split('=')[1].Trim()
-
-    # get HDR
-    $colorSpace = ($probeData | Select-String "color_space=").Line.Split('=')[1].Trim()
+    # Video information
+    $videoProbeData = ffprobe -v error -select_streams v:0 -show_entries stream=width,height,color_space,color_range -of default=noprint_wrappers=1 "$video"
+    $vidWidth = ($videoProbeData | Select-String "width=").Line.Split('=')[1].Trim()
+    $vidHeight = ($videoProbeData | Select-String "height=").Line.Split('=')[1].Trim()
+    $colorSpace = ($videoProbeData | Select-String "color_space=").Line.Split('=')[1].Trim()
+    $inColorRange = ($videoProbeData | Select-String "color_range=").Line.Split('=')[1].Trim()
     $hdr = $false
+
     if ($colorSpace -like "bt2020*") {
         Write-Host "`n HDR file detected, Color Space: $colorSpace" -ForegroundColor Yellow
         $hdr = $true
     }
 
-    # Get audio channel layout and determine if it's surround sound
-    $audioChannelLayout = ($probeData | Select-String "channel_layout=").Line.Split('=')[1].Trim()
-    $surroundSound = $false
-    if (-not [string]::IsNullOrWhiteSpace($audioChannelLayout) -and $audioChannelLayout -ne "stereo" -and $audioChannelLayout -ne "mono") {
-        Write-Host "`nSurround sound or complex audio layout detected, Layout: $audioChannelLayout" -ForegroundColor Yellow
-        $surroundSound = $true
-    }
+    # Audio information
+    $audioProbeData = ffprobe -v error -select_streams a:0 -show_entries stream=channel_layout -of default=noprint_wrappers=1 "$video"
+    $audioChannelLayout = if ($audioProbeData) { ($audioProbeData | Select-String "channel_layout=").Line.Split('=')[1].Trim() } else { $null }
+    $hasAudioTrack = $null -ne $audioChannelLayout
+    $surroundSound = $hasAudioTrack -and $audioChannelLayout -ne "stereo" -and $audioChannelLayout -ne "mono"
+
+    # Format information (duration)
+    $formatProbeData = ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 "$video"
+    $durationSec = ($formatProbeData | Select-String "duration=").Line.Split('=')[1].Trim()
+    $durationSecClamp = [math]::Round($durationSec)
 
     # Return results as a custom object
     return @{
-        DurationSec       = $durationSec
-        DurationSecClamp  = $durationSecClamp
-        VidHeight         = $vidHeight
-        VidWidth          = $vidWidth
-        HDR               = $hdr
-        AudioChannelLayout= $audioChannelLayout
-        SurroundSound     = $surroundSound
+        DurationSec        = $durationSec
+        DurationSecClamp   = $durationSecClamp
+        VidWidth           = $vidWidth
+        VidHeight          = $vidHeight
+        ColorSpace         = $colorSpace
+        ColorRange         = $colorRange
+        HDR                = $hdr
+        HasAudioTrack      = $hasAudioTrack
+        AudioChannelLayout = $audioChannelLayout
+        SurroundSound      = $surroundSound
     }
 }
 

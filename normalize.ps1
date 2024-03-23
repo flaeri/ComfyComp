@@ -42,37 +42,39 @@ function Build-FFmpegCommandNormal {
     ## Build ffmpeg command
     # Input
     #$ll = 32
-    $preInput = "-hide_banner -loglevel $ll -progress pipe:1"
+    $preInput = "-hide_banner -init_hw_device vulkan -loglevel $ll -progress pipe:1"
     $inFile = "-i `"$escapedVideo`"" # Use double quotes and escaped filename
 
     # Initialize the filter components
-    $zscaleFilters = @()
+    $vFilters = @()
 
     # Check for downscaling requirement
     if ($vidInfo["VidWidth"] -gt 1920) {
-        $zscaleFilters += "zscale=w=1920:h=-2"
+        $vFilters += "libplacebo=w=1920:h=-2"
     }
 
     # HDR tonemapping, including transfer to linear light
     if ($vidInfo["HDR"]) {
         # Determine if we need to prepend a comma. This is necessary if downscaling is already part of the filter.
-        $separator = if ($zscaleFilters.Count -gt 0) { "," } else { "" }
+        $separator = if ($vFilters.Count -gt 0) { "," } else { "" }
         
         # Construct the HDR tonemapping filter, including color space conversion
-        $hdrFilter = "${separator}zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709"
+        #$hdrFilter = "${separator}zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709"
+        # $hdrFilter = "${separator}libplacebo=tonemapping=bt.2446a:range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709"
+        $hdrFilter = "${separator}libplacebo=tonemapping=bt.2390:range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709"
 
         # Append the HDR filter to the filter array
-        $zscaleFilters += $hdrFilter
+        $vFilters += $hdrFilter
     }
 
     # Join all filter components
-    $filterString = $zscaleFilters -join ''
+    $filterString = $vFilters -join ''
 
     # Construct the final filter argument
     $vfArg = if ($filterString) { "-vf `"$filterString`"" } else { "" }
 
     # Flags
-    $flags = "-movflags +faststart -profile:v high"
+    $flags = "-movflags +faststart -profile:v high -level:v 42"
 
     # Check if the video has a surround sound layout
     $af = ""
@@ -98,7 +100,7 @@ function Build-FFmpegCommandNormal {
 
     switch ($encoder) {
         0 {
-            $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate 120M -bufsize 240M -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
+            $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate 62M -bufsize 125M -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
         }
         1 {
             $cv = "-c:v libx264 -preset $x264p -crf $x264crf -pix_fmt yuv420p"
@@ -106,7 +108,7 @@ function Build-FFmpegCommandNormal {
     }
 
     $command = "ffmpeg $preInput $inFile $cv $ca $af $vfArg $flags $outFile"
-    #write-host "`nUsing ffcmd: $command"
+    write-host "`nUsing ffcmd: $command"
     return $command
 }
 
