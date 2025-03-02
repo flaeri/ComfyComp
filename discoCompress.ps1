@@ -8,9 +8,11 @@ $audioBr = 128  #Kilobytes, audio bitrate
 # VP9 (slow)
 $cpuUsed = 3        # VP9 speed vs quality
 $vp9Crf = 32        # VP9 crf target
+
 # x264 (fast)
 $x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast)
 $x264crf = 22       # x264 crf target
+
 # nvenc
 $nvencCq = 26       # Nvenc H264 constant quality target
 
@@ -33,12 +35,15 @@ Push-Location $dir
 write-host "`r"
 
 #static
-$question = "Fast (h264, lower quality), Slow (vp9, higher quality)"
-$option = "&Fast", "&Slow"
 $nextChoice = -1 # used for determining what the user wants after first run
 
-function Get-EncodingChoice {
-    return $Host.UI.PromptForChoice("Slow or Fast?", $question, $Option, 1)
+$Encoders = @{
+    "hevc_nvenc" = @{ supported = $false; priority = 1 }
+    "hevc_qsv" = @{ supported = $false; priority = 2 }
+    "h264_nvenc" = @{ supported = $false; priority = 1 }
+    "h264_qsv" = @{ supported = $false; priority = 2 }
+    "x264" = @{ supported = $true; priority = 3 }
+    "libvpx-vp9" = @{ supported = $false; priority = 1 }
 }
 
 function Get-Size {
@@ -50,41 +55,6 @@ function Get-Size {
     # 10% overhead safety 
     $safeSize = $maxSize * 0.90
     return $maxSize, $safeSize
-}
-
-function Select-Encoder {
-    # enc: 0=nvenc, 1=x264, 2=vp9, 3=QSV
-    if ($encoderChoice -eq 0) {
-        write-host "Testing encoders..." -ForegroundColor Yellow
-        ffmpeg -hide_banner -f lavfi -loglevel error -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_nvenc -t 0.1 -f null -
-        if ($?) {
-            write-host "Nvenc OK!" -ForegroundColor green
-            $enc = 0 #nvenc
-        } else {
-            ffmpeg -hide_banner -f lavfi -loglevel error -i smptebars=duration=1:size=1920x1080:rate=30 -c:v h264_qsv -t 0.1 -f null -
-            if ($?) {
-                write-host "QSV OK!" -ForegroundColor Green
-                $enc = 3
-            } else {
-                write-host "No hw accel encode device found, x264 (CPU) it is!" -ForegroundColor Yellow
-                $enc = 1 #x264
-            }
-        }
-        $outExtension = "mp4"
-    } else {
-        ffmpeg -hide_banner -loglevel 0 -f lavfi -i smptebars=duration=1:size=1920x1080:rate=30 -c:v libvpx-vp9 -t 0.1 -f null -
-        if ($?) {
-            write-host "VP9 OK!" -ForegroundColor green
-            $enc = 2 #nvenc
-            $outExtension = "webm"
-        } else {
-            write-host "No VP9 encoder found, falling back to x264" -ForegroundColor Yellow
-            $enc = 1 #x264
-            $outExtension = "mp4"
-        }
-    }
-    Clear-Host
-    return $enc, $outExtension
 }
 
 function Get-Bitrate {
@@ -116,13 +86,13 @@ function Get-Bitrate {
     return $bufsize, $vidBr
 }
 
-function Get-BitsPerHeight  {
+function Optimize-Quality  {
     param (
         [Parameter(Mandatory=$true)]
         [Int32]$vidBr,
 
         [Parameter(Mandatory=$true)]
-        [Int16]$encoder,
+        [string]$encoder,
 
         [Parameter(Mandatory=$true)]
         [Int16]$height,
@@ -132,7 +102,7 @@ function Get-BitsPerHeight  {
     )
 
     $bph = $vidBr/ $height #bitrate per video height
-    if ($encoder -eq 2) {$bph = $bph * 2} # if vp9, 2x bph
+    if ($encoder -eq "libvpx-vp9") {$bph = $bph * 2}
 
     if ($bph -lt $bphTarget) {
         if ($height -ge 1440) {
@@ -162,6 +132,75 @@ function Write-VideoInfo {
     Write-Host ("Bits per Height (BPH): {0}" -f [math]::Round($bph, 2)) -ForegroundColor Yellow
 }
 
+function Get-AvailableEncoders {
+    foreach ($encoder in $Encoders.Keys) {
+        if (Test-Encoder -Encoder $encoder) {
+            write-host "$encoder OK!" -ForegroundColor Green
+            $Encoders[$encoder].supported = $true
+        }
+    }
+}
+
+function Get-EncodingChoice {
+    $question = "Choose encoding option: `n HEVC (fast, efficient, somewhat limited compatibility), `n H264 (default), `n VP9 (slow, very efficient, good compatibility)"
+    $choices = @()
+
+    if ($Encoders["hevc_nvenc"].supported -or $Encoders["hevc_qsv"].supported) {
+        $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&1. HEVC", "HEVC (fast, efficient, somewhat limited compatibility)"
+    }
+    if ($Encoders["h264_nvenc"].supported -or $Encoders["h264_qsv"].supported -or $Encoders["x264"].supported) {
+        $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&2. H264", "H264 (default)"
+    }
+    if ($Encoders["libvpx-vp9"].supported) {
+        $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&3. VP9", "VP9 (slow, very efficient, good compatibility)"
+    }
+
+    $defaultChoice = 1
+    return $Host.UI.PromptForChoice("Encoding Options", $question, $choices, $defaultChoice)
+}
+
+function Select-Encoder {
+    param (
+        [int]$encoderChoice
+    )
+
+    $selectedEncoder = $null
+    $outExtension = "mp4"
+
+    switch ($encoderChoice) {
+        0 { # HEVC
+            $hevcEncoders = $Encoders.GetEnumerator() | Where-Object { $_.Key -like "hevc_*" -and $_.Value.supported } | Sort-Object -Property Value.priority
+            if ($hevcEncoders.Count -gt 0) {
+                $selectedEncoder = $hevcEncoders[0].Key
+            } else {
+                write-host "No HEVC encoder found, falling back to H264" -ForegroundColor Yellow
+                $encoderChoice = 1
+            }
+        }
+        1 { # H264
+            $h264Encoders = $Encoders.GetEnumerator() | Where-Object { $_.Key -like "h264_*" -and $_.Value.supported } | Sort-Object -Property Value.priority
+            if ($h264Encoders.Count -gt 0) {
+                $selectedEncoder = $h264Encoders[0].Key
+            } else {
+                write-host "No hardware H264 encoder found, falling back to x264" -ForegroundColor Yellow
+                $selectedEncoder = "x264"
+            }
+        }
+        2 { # VP9
+            if ($Encoders["libvpx-vp9"].supported) {
+                $selectedEncoder = "libvpx-vp9"
+                $outExtension = "webm"
+            } else {
+                write-host "No VP9 encoder found, falling back to x264" -ForegroundColor Yellow
+                $selectedEncoder = "x264"
+            }
+        }
+    }
+
+    write-host "`nEncoding with $selectedEncoder" -ForegroundColor Yellow
+    return $selectedEncoder, $outExtension
+}
+
 function Build-FFmpegCommand {
     param (
         [Parameter(Mandatory=$true)]
@@ -171,14 +210,13 @@ function Build-FFmpegCommand {
         $hdr,
 
         [Parameter(Mandatory=$true)]
-        [Int16]$encoder,
+        [string]$encoder,
 
         [Parameter(Mandatory=$true)]
         [Int16]$downscaleRes,
 
         [Parameter(Mandatory=$true)]
         [string]$outExtension
-
     )
     ## Build ffmpeg command
     # Input
@@ -193,7 +231,6 @@ function Build-FFmpegCommand {
 
     # scale / HDR
     #$src_range = "-src_range 0"
-    #$pix = "-pix_fmt yuv420p"
     $scale = "" #"-vf zscale=r=limited:m=bt709,format=yuv420p"
     if ($hdr) {
         $scale = "-vf zscale=transfer=linear,tonemap=tonemap=reinhard:desat=0,zscale=r=tv:p=bt709:t=bt709:m=bt709,format=yuv420p -map_metadata -1"
@@ -211,30 +248,35 @@ function Build-FFmpegCommand {
     $outFile = "`"$dir\$baseName-$suffix.$outExtension`"" # Use double quotes and escape them
 
     #codec selector
-    switch ( $enc )
-    {
-        # h264 nvenc
-        0 {
+    switch ($encoder) {
+        "h264_nvenc" {
             $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
             $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
-        # libx264
-        1 {
+        "hevc_nvenc" {
+            $cv = "-c:v hevc_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
+            $ca = "-c:a aac -b:a $audioBr`k"
+            $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
+        }
+        "h264_qsv" {
+            $cv = "-c:v h264_qsv -b:v $vidBr`k -bufsize $bufsize`k -preset 1 -extbrc 1 -look_ahead 30 -pix_fmt nv12"
+            $ca = "-c:a aac -b:a $audioBr`k"
+            $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
+        }
+        "hevc_qsv" {
+            $cv = "-c:v hevc_qsv -b:v $vidBr`k -bufsize $bufsize`k -preset 1 -extbrc 1 -look_ahead 30 -pix_fmt nv12"
+            $ca = "-c:a aac -b:a $audioBr`k"
+            $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
+        }
+        "x264" {
             $cv = "-c:v libx264 -preset $x264p -crf $x264crf -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt yuv420p"
             $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
-        # vp9
-        2 {
+        "libvpx-vp9" {
             $cv = "-c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf -b:v $vidBr`k -pix_fmt yuv420p"
             $ca = "-c:a libopus -b:a $audioBr`k"
-            $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
-        }
-        # QSV
-        3 {
-            $cv = "-c:v h264_qsv -b:v $vidBr`k -bufsize $bufsize`k -preset 1 -min_qp_i 18 -min_qp_p 20 -min_qp_b 22 -extbrc 1 -look_ahead 1 -pix_fmt nv12"
-            $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
         }
     }
@@ -296,11 +338,14 @@ function Get-NextActionChoice {
 
 ### end of functions ###
 
+### Main ###
+Get-AvailableEncoders
+
 do {
     if ($nextChoice -eq -1 -or $nextChoice -eq 1) {
         # If it's the first run or user chose to run with new settings
-        $encoderChoice = Get-EncodingChoice #pick encode, 0 = fast, 1 = slow
-        $enc, $outExtension = Select-Encoder #gets encoder and extension
+        $encoderChoice = Get-EncodingChoice
+        $enc, $outExtension = Select-Encoder -encoderChoice $encoderChoice
     }    
 
     $video = Get-File #gets and parses file, path, extensions etc
@@ -308,7 +353,7 @@ do {
 
     $maxSize, $safeSize = Get-Size #prompts for filesize and calculates size
     $bufsize, $vidBr = Get-Bitrate -safeSize $safeSize -duration $videoInfo.DurationSec -audioBr $audioBr
-    $bph, $downscaleRes = Get-BitsPerHeight -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
+    $bph, $downscaleRes = Optimize-Quality -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
 
     Write-VideoInfo
     write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
