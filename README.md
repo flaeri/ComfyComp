@@ -6,17 +6,19 @@
 
 ## Getting Started
 
+Shortcut (TLDR): Instantly setup and run discoCompress: 
+```
+iwr https://github.com/flaeri/ComfyComp/archive/refs/heads/experimental.zip -OutFile "cc.zip"; expand-archive -path "cc.zip"; powershell -ExecutionPolicy Bypass -File "cc\ComfyComp-experimental\discoCompress.ps1"
+```
+This downloads, decompresses and runs the file to compress videos for discord
+----------------------
+
 1. Download the latest release from [here](https://github.com/flaeri/ComfyComp/releases)
 2. Unzip to any location
 3. Run (double click) "01help-fix.cmd"
 5. Try running any of the scripts by right clicking it > run with powershell
 
 	a. In order to test most of them, you need to place some files in the `01 Input` folder
-
-BONUS: Cutesy PS one-liner: 
-```
-iwr https://github.com/flaeri/ComfyComp/archive/refs/heads/experimental.zip -OutFile "cc.zip"; expand-archive -path "cc.zip"; explorer "cc\ComfyComp-experimental"
-```
 
 <br>
 
