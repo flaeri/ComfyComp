@@ -7,14 +7,9 @@ $audioBr = 128  #Kilobytes, audio bitrate
 # Speed and Quality
 # VP9 (slow)
 $cpuUsed = 3        # VP9 speed vs quality
-$vp9Crf = 32        # VP9 crf target
 
 # x264 (fast)
 $x264p = "veryfast" # x264 preset (slow, medium, fast, faster, veryfast)
-$x264crf = 22       # x264 crf target
-
-# nvenc
-$nvencCq = 26       # Nvenc H264 constant quality target
 
 # Misc
 $suffix = "disc"    #output is tagged with this, like "myVideo-disc.webm/mp4"
@@ -86,7 +81,7 @@ function Get-Bitrate {
     return $bufsize, $vidBr
 }
 
-function Optimize-Quality  {
+function Optimize-BitsPerPixel {
     param (
         [Parameter(Mandatory=$true)]
         [Int32]$vidBr,
@@ -101,27 +96,55 @@ function Optimize-Quality  {
         [double]$bphTarget
     )
 
-    $bph = $vidBr/ $height #bitrate per video height
-    if ($encoder -eq "libvpx-vp9") {$bph = $bph * 2}
+    $acceptableHeights = @(
+        @{ height = 1440; x264crf = 24; vp9Crf = 30; nvencCq = 28 },
+        @{ height = 1080; x264crf = 22; vp9Crf = 32; nvencCq = 26 },
+        @{ height = 720; x264crf = 20; vp9Crf = 34; nvencCq = 24 },
+        @{ height = 480; x264crf = 18; vp9Crf = 36; nvencCq = 22 }
+    )
 
-    if ($bph -lt $bphTarget) {
-        if ($height -ge 1440) {
-            $downscaleRes = 1080
-            $x264crf = $x264crf-2
-            $nvencCq = $nvencCq-2
-        }
-        $bph = $vidBr/1080
-        write-host "`nNot enough bit rate for $height`p, downscaling..." -ForegroundColor Yellow
-        if ($bph -lt $bphTarget) {
-            $downscaleRes = 720
-            $x264crf = $x264crf-2
-            $vp9Crf = $vp9Crf+2
-            $nvencCq = $nvencCq-2
-            write-host "Go to 720p" -ForegroundColor Yellow
-        }
+    # Adjust bphTarget based on encoder type
+    switch ($encoder) {
+        "libvpx-vp9" { $bphTarget /= 1.5 }
+        "hevc_nvenc" { $bphTarget /= 1.5 }
+        "hevc_qsv" { $bphTarget /= 1.5 }
     }
 
-    return $bph, $downscaleRes
+    $bph = [math]::Round(($vidBr / $height), 2)
+
+    if ($bph -ge $bphTarget) {
+        return $bph, $null, @{ x264crf = 22; vp9Crf = 32; nvencCq = 26 }
+    }
+
+    write-host "`nNot enough bit rate for $height`p (BPH: $bph, target: $bphTarget), downscaling to improve bits per pixel" -ForegroundColor Yellow
+
+    $downscaleRes = $height
+    while ($bph -lt $bphTarget -and $acceptableHeights.Count -gt 0) {
+        $currentHeight = $acceptableHeights | Where-Object { $_.height -eq $downscaleRes }
+        if ($null -eq $currentHeight) {
+            break
+        }
+
+        $nextIndex = $acceptableHeights.IndexOf($currentHeight) + 1
+        if ($nextIndex -ge $acceptableHeights.Count) {
+            break
+        }
+
+        $downscaleRes = $acceptableHeights[$nextIndex].height
+        $x264crf = $acceptableHeights[$nextIndex].x264crf
+        $vp9Crf = $acceptableHeights[$nextIndex].vp9Crf
+        $nvencCq = $acceptableHeights[$nextIndex].nvencCq
+
+        $bph = [math]::Round(($vidBr / $downscaleRes), 2)
+    }
+
+    if ($downscaleRes -lt 480) {
+        $downscaleRes = 480
+        write-host "`nDownscale resolution cannot go below 480p. Setting to 480p." -ForegroundColor Yellow
+    }
+
+    write-host "`nDownscaled to $downscaleRes`p @ BPH: $bph" -ForegroundColor Yellow
+    return $bph, $downscaleRes, @{ x264crf = $x264crf; vp9Crf = $vp9Crf; nvencCq = $nvencCq }
 }
 
 function Write-VideoInfo {
@@ -129,7 +152,7 @@ function Write-VideoInfo {
     write-host "Duration: $($videoInfo.DurationSecClamp) sec" -ForegroundColor Yellow
     write-host "Bitrate: $vidBr kbps" -ForegroundColor Yellow
     Write-host "Max Size: $maxSize mb" -ForegroundColor Yellow
-    Write-Host ("Bits per Height (BPH): {0}" -f [math]::Round($bph, 2)) -ForegroundColor Yellow
+    Write-Host ("Bits per Height (BPH): $bph") -ForegroundColor Yellow
 }
 
 function Get-AvailableEncoders {
@@ -142,20 +165,23 @@ function Get-AvailableEncoders {
 }
 
 function Get-EncodingChoice {
-    $question = "Choose encoding option: `n HEVC (fast, efficient, somewhat limited compatibility), `n H264 (default), `n VP9 (slow, very efficient, good compatibility)"
+    $question = "Choose encoding option: 
+        `HEVC (fast, efficient, somewhat limited compatibility), 
+        `H264 (fast, not very efficient, extremely good compatability), 
+        `VP9 (slow, very efficient, good compatibility)"
     $choices = @()
 
     if ($Encoders["hevc_nvenc"].supported -or $Encoders["hevc_qsv"].supported) {
         $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&1. HEVC", "HEVC (fast, efficient, somewhat limited compatibility)"
     }
     if ($Encoders["h264_nvenc"].supported -or $Encoders["h264_qsv"].supported -or $Encoders["x264"].supported) {
-        $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&2. H264", "H264 (default)"
+        $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&2. H264", "H264 (fast, not very efficient, extremely good compatability)"
     }
     if ($Encoders["libvpx-vp9"].supported) {
         $choices += New-Object System.Management.Automation.Host.ChoiceDescription "&3. VP9", "VP9 (slow, very efficient, good compatibility)"
     }
 
-    $defaultChoice = 1
+    $defaultChoice = 0
     return $Host.UI.PromptForChoice("Encoding Options", $question, $choices, $defaultChoice)
 }
 
@@ -213,6 +239,9 @@ function Build-FFmpegCommand {
         [string]$encoder,
 
         [Parameter(Mandatory=$true)]
+        [hashtable]$qualityTargets,
+
+        [Parameter(Mandatory=$true)]
         [Int16]$downscaleRes,
 
         [Parameter(Mandatory=$true)]
@@ -250,12 +279,12 @@ function Build-FFmpegCommand {
     #codec selector
     switch ($encoder) {
         "h264_nvenc" {
-            $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
+            $cv = "-c:v h264_nvenc -preset p6 -rc vbr -cq $($qualityTargets['nvencCq']) -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
             $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
         "hevc_nvenc" {
-            $cv = "-c:v hevc_nvenc -preset p6 -rc vbr -cq $nvencCq -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
+            $cv = "-c:v hevc_nvenc -preset p6 -rc vbr -cq $($qualityTargets['nvencCq']) -b:v 0 -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt nv12 -spatial-aq 1 -temporal-aq 1 -aq-strength 7"
             $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
@@ -270,12 +299,12 @@ function Build-FFmpegCommand {
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
         }
         "x264" {
-            $cv = "-c:v libx264 -preset $x264p -crf $x264crf -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt yuv420p"
+            $cv = "-c:v libx264 -preset $x264p -crf $($qualityTargets['x264crf']) -b:v $vidBr`k -maxrate $vidBr`k -bufsize $bufSize`k -pix_fmt yuv420p"
             $ca = "-c:a aac -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $flags $outFile"
         }
         "libvpx-vp9" {
-            $cv = "-c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $vp9Crf -b:v $vidBr`k -pix_fmt yuv420p"
+            $cv = "-c:v libvpx-vp9 -cpu-used $cpuUsed -row-mt 1 -crf $($qualityTargets['vp9Crf']) -b:v $vidBr`k -pix_fmt yuv420p"
             $ca = "-c:a libopus -b:a $audioBr`k"
             $command = "ffmpeg $preInput $inFile $cv $ca $scale $outFile"
         }
@@ -370,14 +399,14 @@ do {
 
     $maxSize, $safeSize = Get-Size #prompts for filesize and calculates size
     $bufsize, $vidBr = Get-Bitrate -safeSize $safeSize -duration $videoInfo.DurationSec -audioBr $audioBr
-    $bph, $downscaleRes = Optimize-Quality -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
+    $bph, $downscaleRes, $qualityTargets = Optimize-BitsPerPixel -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
 
     Write-VideoInfo
     $streamInfo = Get-VideoFramerateAndDuration -inputFile $video
     write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
     pause
 
-    $ffCommand = Build-FFmpegCommand -video $video -hdr $videoInfo.HDR -downscaleRes $downscaleRes -encoder $enc -outExtension $outExtension
+    $ffCommand = Build-FFmpegCommand -video $video -hdr $videoInfo.HDR -downscaleRes $downscaleRes -encoder $enc -outExtension $outExtension -qualityTarget $qualityTargets
     Invoke-Encode -ffCommand $ffCommand -outExtension $outExtension -streamInfo $streamInfo
 
     # Prompt for next action
