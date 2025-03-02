@@ -597,3 +597,12 @@ Function Write-FFmpegProgress {
     }
 }
 
+function Test-Encoder {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Encoder
+    )
+
+    ffmpeg -hide_banner -f lavfi -loglevel 0 -i smptebars=duration=1:size=1920x1080:rate=30 -c:v $Encoder -t 0.1 -f null -
+    return $?
+}
