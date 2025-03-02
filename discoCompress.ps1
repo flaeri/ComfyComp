@@ -18,7 +18,7 @@ $nvencCq = 26       # Nvenc H264 constant quality target
 
 # Misc
 $suffix = "disc"    #output is tagged with this, like "myVideo-disc.webm/mp4"
-$ll = 32            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
+$ll = 24            #how much ffmpeg outputs to the console. 24 for quiet, 32 for progress/state
 $bphTarget = 5.6    #Default 5.6. how many bits per heigh (limit), before downscaling happen.
 
 ### STOP TOUCHY NOW ###
@@ -226,7 +226,7 @@ function Build-FFmpegCommand {
 
     ## Build ffmpeg command
     # Input
-    $preInput = "-hide_banner -loglevel $ll"
+    $preInput = "-hide_banner -loglevel $ll -progress pipe:1"
     $inFile = "-i `"$escapedVideo`"" # Use double quotes and escaped filename
 
     # scale / HDR
@@ -289,14 +289,31 @@ function Invoke-Encode {
         $ffCommand,
 
         [Parameter(Mandatory=$true)]
-        $outExtension
+        $outExtension,
+
+        [Parameter(Mandatory=$true)]
+        $streamInfo
 
     )
 
     #timer
     Start-Timer "$name"
-    # Actual run
-    Invoke-Expression $ffCommand
+    $progressData = @{}
+
+    # Start the encoding process and monitor its progress
+    Invoke-Expression $ffCommand | ForEach-Object {
+        if ($_ -match "^(frame|fps|stream_0_0_q|bitrate|total_size|out_time_us|out_time_ms|out_time|dup_frames|drop_frames|speed|progress)=(.+)") {
+            $progressData[$matches[1]] = $matches[2]
+        }
+        if ($_ -match "progress=(continue|end)") {
+            Write-FFmpegProgress -ProgressData $progressData -videoInfo $videoInfo -streamInfo $streamInfo
+            if ($matches[1] -eq "end") {
+                Write-Host "FFmpeg encoding completed."
+            }
+            # Clear the hashtable for the next set of progress data
+            $progressData.Clear()
+        }
+    }
 
     $outputFilePath = Join-Path -Path $dir -ChildPath "$baseName-$suffix.$outExtension"
 
@@ -356,11 +373,12 @@ do {
     $bph, $downscaleRes = Optimize-Quality -vidBr $vidBr -encoder $enc -height $videoinfo.VidHeight -bphTarget $bphTarget
 
     Write-VideoInfo
+    $streamInfo = Get-VideoFramerateAndDuration -inputFile $video
     write-host "`nGo? ctrl+c to cancel" -ForegroundColor Green
     pause
 
     $ffCommand = Build-FFmpegCommand -video $video -hdr $videoInfo.HDR -downscaleRes $downscaleRes -encoder $enc -outExtension $outExtension
-    Invoke-Encode -ffCommand $ffCommand -outExtension $outExtension
+    Invoke-Encode -ffCommand $ffCommand -outExtension $outExtension -streamInfo $streamInfo
 
     # Prompt for next action
     $nextChoice = Get-NextActionChoice
